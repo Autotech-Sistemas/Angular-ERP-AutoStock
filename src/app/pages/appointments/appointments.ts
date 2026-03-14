@@ -9,13 +9,13 @@ import {
   CustomerService,
   SellerService,
 } from '../../services/business.service';
-import { ModalComponent } from '../../shared/components/modal/modal.component';
-import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import Swal from 'sweetalert2';
+import { Modal } from '../../shared/components/modal/modal';
+import { Pagination } from '../../shared/components/pagination/pagination';
 
 @Component({
   selector: 'app-appointments',
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, ModalComponent, PaginationComponent],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Modal, Pagination],
   templateUrl: './appointments.html',
   styleUrl: './appointments.css',
 })

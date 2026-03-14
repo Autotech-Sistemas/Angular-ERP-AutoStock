@@ -3,12 +3,12 @@ import { Component, inject, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { BranchService } from '../../services/business.service';
-import { ModalComponent } from '../../shared/components/modal/modal.component';
 import Swal from 'sweetalert2';
+import { Modal } from '../../shared/components/modal/modal';
 
 @Component({
   selector: 'app-branches',
-  imports: [CommonModule, ReactiveFormsModule, ModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, Modal],
   templateUrl: './branches.html',
   styleUrl: './branches.css',
 })

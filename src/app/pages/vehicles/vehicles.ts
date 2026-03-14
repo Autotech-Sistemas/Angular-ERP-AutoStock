@@ -1,8 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
-import { ModalComponent } from '../../shared/components/modal/modal.component';
-import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { VehicleService } from '../../services/business.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Vehicle } from '../../shared/interfaces/models.interface';
@@ -16,10 +14,12 @@ import {
   fuelLabel,
 } from '../../shared/helpers/formatters.helper';
 import Swal from 'sweetalert2';
+import { Modal } from '../../shared/components/modal/modal';
+import { Pagination } from '../../shared/components/pagination/pagination';
 
 @Component({
   selector: 'app-vehicles',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ModalComponent, PaginationComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, Modal, Pagination],
   templateUrl: './vehicles.html',
   styleUrl: './vehicles.css',
 })

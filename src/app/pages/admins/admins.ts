@@ -3,13 +3,13 @@ import { Component, inject, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { AdminService } from '../../services/business.service';
-import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { maskPhone } from '../../shared/helpers/formatters.helper';
 import Swal from 'sweetalert2';
+import { Modal } from '../../shared/components/modal/modal';
 
 @Component({
   selector: 'app-admins',
-  imports: [CommonModule, ReactiveFormsModule, ModalComponent],
+  imports: [CommonModule, ReactiveFormsModule, Modal],
   templateUrl: './admins.html',
   styleUrl: './admins.css',
 })

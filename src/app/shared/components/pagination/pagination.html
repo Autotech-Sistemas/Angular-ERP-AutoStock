@@ -1,0 +1,33 @@
+@if (totalPages > 1) {
+  <nav class="flex items-center gap-1" role="navigation" aria-label="Paginação">
+    <button
+      class="page-btn"
+      [disabled]="currentPage === 0"
+      (click)="go(currentPage - 1)"
+      aria-label="Página anterior"
+    >
+      ‹
+    </button>
+
+    @for (p of pages; track p) {
+      <button
+        class="page-btn"
+        [class.active]="p === currentPage"
+        (click)="go(p)"
+        [attr.aria-label]="'Página ' + (p + 1)"
+        [attr.aria-current]="p === currentPage ? 'page' : null"
+      >
+        {{ p + 1 }}
+      </button>
+    }
+
+    <button
+      class="page-btn"
+      [disabled]="currentPage === totalPages - 1"
+      (click)="go(currentPage + 1)"
+      aria-label="Próxima página"
+    >
+      ›
+    </button>
+  </nav>
+}

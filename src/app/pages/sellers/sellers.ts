@@ -1,16 +1,16 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ModalComponent } from '../../shared/components/modal/modal.component';
-import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import { SellerService } from '../../services/business.service';
 import { ToastService } from '../../core/services/toast.service';
 import { formatDate, maskPhone } from '../../shared/helpers/formatters.helper';
 import Swal from 'sweetalert2';
+import { Pagination } from '../../shared/components/pagination/pagination';
+import { Modal } from '../../shared/components/modal/modal';
 
 @Component({
   selector: 'app-sellers',
-  imports: [CommonModule, ReactiveFormsModule, ModalComponent, PaginationComponent],
+  imports: [CommonModule, ReactiveFormsModule, Modal, Pagination],
   templateUrl: './sellers.html',
   styleUrl: './sellers.css',
 })

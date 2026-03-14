@@ -1,0 +1,186 @@
+<!-- Page transition overlay -->
+<app-page-transition />
+
+<!-- Toast notifications -->
+<app-toast />
+
+<!-- Mobile overlay -->
+@if (sidebarOpen() && isMobile()) {
+  <div
+    class="fixed inset-0 bg-black/50 z-30 backdrop-blur-sm"
+    (click)="sidebarOpen.set(false)"
+    aria-hidden="true"
+  ></div>
+}
+
+<!-- Sidebar -->
+<aside class="sidebar" [class.open]="sidebarOpen()" role="navigation" aria-label="Menu principal">
+  <!-- Logo -->
+  <div
+    class="px-4 py-5 border-b flex items-center gap-3"
+    style="border-color: var(--surface-border)"
+  >
+    <div
+      class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+      style="background: linear-gradient(135deg, var(--brand), var(--brand-dark))"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path
+          d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3m-4 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+        />
+      </svg>
+    </div>
+    <div>
+      <span
+        class="font-heading font-black text-base tracking-tight"
+        style="color: var(--text-primary)"
+        >Auto<span style="color: var(--brand)">Stock</span></span
+      >
+      <div class="text-xs" style="color: var(--text-muted); font-family: 'DM Sans', sans-serif">
+        ERP Concessionária
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="flex-1 overflow-y-auto py-3" aria-label="Seções do sistema">
+    @for (section of sections; track section) {
+      <div
+        class="px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] font-heading"
+        style="color: var(--text-muted)"
+      >
+        {{ section }}
+      </div>
+      @for (item of navBySection(section); track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          class="nav-item"
+          (click)="onNavClick(item.label)"
+          [attr.aria-label]="item.label"
+        >
+          <span
+            class="nav-icon w-4 h-4 flex-shrink-0"
+            aria-hidden="true"
+            [innerHTML]="getIcon(item.icon)"
+          ></span>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    }
+  </nav>
+
+  <!-- User -->
+  <div class="p-4 border-t" style="border-color: var(--surface-border)">
+    <div class="flex items-center gap-3">
+      <div
+        class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+        style="background: linear-gradient(135deg, var(--brand), var(--brand-dark))"
+        aria-hidden="true"
+      >
+        {{ userInitial() }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div
+          class="text-sm font-semibold truncate"
+          style="color: var(--text-primary); font-family: 'Syne', sans-serif"
+        >
+          {{ auth.currentUser()?.name ?? 'Admin' }}
+        </div>
+        <div class="text-xs truncate" style="color: var(--text-muted)">
+          {{ auth.currentUser()?.email }}
+        </div>
+      </div>
+      <button
+        (click)="confirmLogout()"
+        class="w-7 h-7 rounded-lg flex items-center justify-center transition-colors"
+        style="color: var(--text-muted)"
+        title="Sair"
+        aria-label="Sair do sistema"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- Main content -->
+<div class="main-content" [class.expanded]="isMobile()">
+  <!-- Topbar -->
+  <header class="topbar" role="banner">
+    <div class="flex items-center gap-3">
+      <button
+        class="w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
+        style="
+          background: var(--surface-tertiary);
+          border: 1px solid var(--surface-border);
+          color: var(--text-secondary);
+        "
+        (click)="sidebarOpen.update(v => !v)"
+        aria-label="Alternar menu lateral"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+        >
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
+      <div>
+        <h1 class="font-heading font-semibold text-sm" style="color: var(--text-primary)">
+          {{ currentLabel() }}
+        </h1>
+        <div class="text-xs" style="color: var(--text-muted)">{{ todayDate }}</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- Online indicator -->
+      <div
+        class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs"
+        style="
+          background: rgba(22, 163, 74, 0.1);
+          color: var(--success);
+          border: 1px solid rgba(22, 163, 74, 0.2);
+        "
+      >
+        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true"></span>
+        API Online
+      </div>
+      <app-theme-toggle />
+    </div>
+  </header>
+
+  <!-- Page content -->
+  <main id="main-content" tabindex="-1">
+    <router-outlet />
+  </main>
+</div>

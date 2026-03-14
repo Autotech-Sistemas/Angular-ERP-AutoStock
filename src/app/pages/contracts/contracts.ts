@@ -4,13 +4,13 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
 import { ContractService, SaleService } from '../../services/business.service';
 import { formatCurrency, formatDate, contractStatusClass, contractStatusLabel } from '../../shared/helpers/formatters.helper';
-import { ModalComponent } from '../../shared/components/modal/modal.component';
-import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 import Swal from 'sweetalert2';
+import { Modal } from '../../shared/components/modal/modal';
+import { Pagination } from '../../shared/components/pagination/pagination';
 
 @Component({
   selector: 'app-contracts',
-  imports: [CommonModule, ReactiveFormsModule, ModalComponent, PaginationComponent],
+  imports: [CommonModule, ReactiveFormsModule, Modal, Pagination],
   templateUrl: './contracts.html',
   styleUrl: './contracts.css',
 })

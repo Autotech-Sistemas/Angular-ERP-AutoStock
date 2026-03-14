@@ -1,0 +1,182 @@
+@if (svc.isTransitioning()) {
+  <div
+    class="page-transition-overlay animate-fade-in"
+    role="status"
+    aria-live="polite"
+    aria-label="Carregando página"
+  >
+    <!-- Background pattern -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <div
+        class="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-[0.04]"
+        style="background: radial-gradient(circle, var(--brand) 0%, transparent 70%)"
+      ></div>
+      <div
+        class="absolute -bottom-32 -left-32 w-96 h-96 rounded-full opacity-[0.04]"
+        style="background: radial-gradient(circle, var(--brand-light) 0%, transparent 70%)"
+      ></div>
+    </div>
+
+    <!-- Icon loader -->
+    <div class="relative flex flex-col items-center gap-6 z-10">
+      <div class="relative w-24 h-24">
+        <!-- Outer spinning ring -->
+        <svg
+          class="absolute inset-0 w-full h-full"
+          viewBox="0 0 96 96"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle cx="48" cy="48" r="44" stroke="var(--surface-border)" stroke-width="2" />
+          <circle
+            cx="48"
+            cy="48"
+            r="44"
+            stroke="var(--brand)"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            [style.strokeDasharray]="'276'"
+            style="
+              stroke-dashoffset: 0;
+              transform-origin: center;
+              animation:
+                dash 1.6s ease-in-out infinite,
+                spin-ccw 2.4s linear infinite;
+            "
+          />
+        </svg>
+
+        <!-- Inner icon -->
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div
+            class="w-12 h-12 flex items-center justify-center"
+            style="animation: pulseOpacity 1.8s ease-in-out infinite"
+          >
+            @switch (svc.currentIcon()) {
+              @case ('gear') {
+                <svg
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  stroke="var(--brand)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="w-10 h-10"
+                  style="animation: rotateIcon 3s linear infinite; transform-origin: center"
+                >
+                  <path d="M24 30a6 6 0 100-12 6 6 0 000 12z" />
+                  <path
+                    d="M38.2 24a14.2 14.2 0 00.1-1.5l3.2-2.5a1 1 0 00.2-1.3l-3-5.2a1 1 0 00-1.2-.5l-3.8 1.5a14 14 0 00-2.6-1.5L30.6 9a1 1 0 00-1-.9h-6a1 1 0 00-1 .9l-.5 4a14 14 0 00-2.6 1.5l-3.8-1.5a1 1 0 00-1.2.5l-3 5.2a1 1 0 00.2 1.3l3.2 2.5a13.5 13.5 0 000 3L11.8 28a1 1 0 00-.2 1.3l3 5.2a1 1 0 001.2.5l3.8-1.5a14 14 0 002.6 1.5l.5 4a1 1 0 001 .9h6a1 1 0 001-.9l.5-4a14 14 0 002.6-1.5l3.8 1.5a1 1 0 001.2-.5l3-5.2a1 1 0 00-.2-1.3l-3.2-2.5c.1-.5.1-1 .1-1.5z"
+                  />
+                </svg>
+              }
+              @case ('car') {
+                <svg
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  stroke="var(--brand)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="w-10 h-10"
+                  style="animation: carDrive 0.6s ease-in-out infinite alternate"
+                >
+                  <path d="M8 28h32M10 28V34M38 28V34M12 20l4-8h16l4 8" />
+                  <path d="M6 28l2-8h28l2 8H6z" />
+                  <circle cx="14" cy="34" r="3" fill="var(--brand)" stroke="none" />
+                  <circle cx="34" cy="34" r="3" fill="var(--brand)" stroke="none" />
+                  <path d="M18 20h12" stroke-width="1.5" opacity=".5" />
+                </svg>
+              }
+              @case ('motorcycle') {
+                <svg
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  stroke="var(--brand)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="w-10 h-10"
+                  style="animation: carDrive 0.5s ease-in-out infinite alternate"
+                >
+                  <circle cx="10" cy="34" r="6" />
+                  <circle cx="38" cy="34" r="6" />
+                  <path d="M16 34h16M28 34L22 18h-8M22 18l6 4 6-4" />
+                  <path d="M28 18h6l4 10" />
+                  <circle cx="10" cy="34" r="2" fill="var(--brand)" stroke="none" />
+                  <circle cx="38" cy="34" r="2" fill="var(--brand)" stroke="none" />
+                </svg>
+              }
+              @case ('wrench') {
+                <svg
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  stroke="var(--brand)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="w-10 h-10"
+                  style="animation: wrenchTurn 1s ease-in-out infinite alternate"
+                >
+                  <path
+                    d="M34.9 13.1a10 10 0 01-13.5 14.4L11 38a3.5 3.5 0 01-5-5l10.4-10.4A10 10 0 0134.9 13z"
+                  />
+                  <path d="M30 14l4 4" />
+                </svg>
+              }
+              @case ('box') {
+                <svg
+                  viewBox="0 0 48 48"
+                  fill="none"
+                  stroke="var(--brand)"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="w-10 h-10"
+                  style="animation: pulseOpacity 1s ease-in-out infinite"
+                >
+                  <path d="M24 4L4 14v20l20 10 20-10V14L24 4z" />
+                  <path d="M4 14l20 10M44 14L24 24M24 24v20" />
+                  <path d="M14 9l20 10" stroke-width="1.5" opacity=".5" />
+                </svg>
+              }
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Brand name -->
+      <div class="text-center">
+        <div
+          class="font-heading font-black text-2xl tracking-tight mb-1"
+          style="
+            background: linear-gradient(135deg, var(--brand-light), var(--brand));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          "
+        >
+          AutoStock
+        </div>
+        <p
+          class="text-sm font-body"
+          style="color: var(--text-muted); animation: slideUp 0.5s ease forwards"
+        >
+          {{ svc.currentLabel() }}
+        </p>
+      </div>
+
+      <!-- Dot trail -->
+      <div class="flex gap-2">
+        @for (i of [0, 1, 2, 3, 4]; track i) {
+          <div
+            class="w-1.5 h-1.5 rounded-full"
+            [style.background]="'var(--brand-light)'"
+            [style.animation]="'pulseOpacity 1.2s ease-in-out infinite'"
+            [style.animation-delay]="i * 0.15 + 's'"
+          ></div>
+        }
+      </div>
+    </div>
+  </div>
+}

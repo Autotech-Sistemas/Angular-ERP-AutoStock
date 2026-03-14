@@ -1,0 +1,27 @@
+:host {
+  display: contents;
+}
+
+@keyframes spin-ccw {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes carDrive {
+  from {
+    transform: translateX(-2px);
+  }
+  to {
+    transform: translateX(2px);
+  }
+}
+@keyframes wrenchTurn {
+  from {
+    transform: rotate(-15deg);
+    transform-origin: 11px 38px;
+  }
+  to {
+    transform: rotate(15deg);
+    transform-origin: 11px 38px;
+  }
+}
