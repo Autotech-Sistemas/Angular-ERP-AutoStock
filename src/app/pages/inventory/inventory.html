@@ -1,0 +1,218 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Estoque</h2>
+      <p class="page-subtitle">Itens disponíveis e gestão de inventário</p>
+    </div>
+    <button class="btn-brand" (click)="openNew()">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Novo Item
+    </button>
+  </div>
+  <div class="card overflow-hidden">
+    <div class="p-4" style="border-bottom: 1px solid var(--surface-border)">
+      <div class="relative">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          style="color: var(--text-muted)"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          type="search"
+          class="form-input pl-9 w-72"
+          placeholder="Buscar no estoque..."
+          [(ngModel)]="searchQuery"
+          (input)="applyFilter()"
+          aria-label="Buscar no estoque"
+        />
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="data-table" aria-label="Lista de estoque">
+        <thead>
+          <tr>
+            <th>Veículo</th>
+            <th>Placa</th>
+            <th>Chassi</th>
+            <th>Fornecedor</th>
+            <th>Preço Aquisição</th>
+            <th>Margem</th>
+            <th>Preço Venda</th>
+            <th>Entrada</th>
+            <th><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading) {
+            @for (i of [1, 2, 3]; track i) {
+              <tr>
+                @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track j) {
+                  <td>
+                    <div
+                      class="h-4 rounded animate-pulse"
+                      style="background: var(--surface-tertiary)"
+                    ></div>
+                  </td>
+                }
+              </tr>
+            }
+          } @else if (filtered.length === 0) {
+            <tr>
+              <td colspan="9" class="text-center py-10 text-sm" style="color: var(--text-muted)">
+                Nenhum item no estoque
+              </td>
+            </tr>
+          } @else {
+            @for (i of filtered; track i.id) {
+              <tr>
+                <td>
+                  <div class="font-medium" style="color: var(--text-primary)">
+                    {{ i.vehicle?.brand }} {{ i.vehicle?.model }}
+                  </div>
+                </td>
+                <td>
+                  <span class="badge badge-blue font-mono">
+                    {{ i.licensePlate ?? '—' }}
+                  </span>
+                </td>
+                <td class="font-mono text-xs" style="color: var(--text-muted)">
+                  {{ i.chassis ?? '—' }}
+                </td>
+                <td>{{ i.supplier ?? '—' }}</td>
+                <td>{{ fmtCurrency(i.acquisitionPrice) }}</td>
+                <td style="color: #4ade80">
+                  {{ i.profitMargin != null ? i.profitMargin + '%' : '—' }}
+                </td>
+                <td class="font-semibold" style="color: #4ade80">
+                  {{ calcSalePrice(i) }}
+                </td>
+                <td>{{ fmtDate(i.stockEntryDate) }}</td>
+                <td>
+                  <button
+                    class="btn-danger"
+                    (click)="delete(i)"
+                    [attr.aria-label]="'Excluir item ' + (i.licensePlate ?? '')"
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <div
+      class="p-4 flex flex-wrap items-center justify-between gap-3"
+      style="border-top: 1px solid var(--surface-border)"
+    >
+      <span class="text-xs" style="color: var(--text-muted)">{{ totalElements }} item(ns)</span>
+      <app-pagination
+        [totalElements]="totalElements"
+        [pageSize]="12"
+        [currentPage]="page"
+        (pageChange)="load($event)"
+      />
+    </div>
+  </div>
+
+  <app-modal title="Item de Estoque" [open]="modalOpen" (closeModal)="modalOpen = false">
+    <ng-container slot="body">
+      <form [formGroup]="form" class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="form-label" for="inv-veh">Veículo *</label>
+          <select id="inv-veh" class="form-input" formControlName="vehicleId">
+            @for (v of vehicles; track v.id) {
+              <option [value]="v.id">{{ v.brand }} {{ v.model }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="inv-plate">Placa</label
+          ><input
+            id="inv-plate"
+            class="form-input"
+            formControlName="licensePlate"
+            placeholder="ABC-1234"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="inv-chassis">Chassi</label
+          ><input
+            id="inv-chassis"
+            class="form-input"
+            formControlName="chassis"
+            placeholder="9BW..."
+          />
+        </div>
+        <div>
+          <label class="form-label" for="inv-sup">Fornecedor</label
+          ><input id="inv-sup" class="form-input" formControlName="supplier" />
+        </div>
+        <div>
+          <label class="form-label" for="inv-acq">Preço Aquisição</label
+          ><input
+            id="inv-acq"
+            type="number"
+            class="form-input"
+            formControlName="acquisitionPrice"
+            step="0.01"
+            (input)="calcPreview()"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="inv-margin">Margem (%)</label
+          ><input
+            id="inv-margin"
+            type="number"
+            class="form-input"
+            formControlName="profitMargin"
+            step="0.1"
+            (input)="calcPreview()"
+          />
+        </div>
+        <div>
+          <label class="form-label">Preço Venda (calculado)</label>
+          <div
+            class="form-input font-semibold"
+            style="color: #4ade80; background: var(--surface); cursor: default"
+          >
+            {{ salePreview }}
+          </div>
+        </div>
+        <div>
+          <label class="form-label" for="inv-entry">Data Entrada</label
+          ><input id="inv-entry" type="date" class="form-input" formControlName="stockEntryDate" />
+        </div>
+        <div>
+          <label class="form-label" for="inv-exit">Data Saída</label
+          ><input id="inv-exit" type="date" class="form-input" formControlName="stockExitDate" />
+        </div>
+      </form>
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="save()">Salvar</button>
+    </ng-container>
+  </app-modal>
+</div>

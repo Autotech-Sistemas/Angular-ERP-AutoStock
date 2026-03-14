@@ -1,0 +1,170 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Dashboard</h2>
+      <p class="page-subtitle">Visão geral em tempo real</p>
+    </div>
+    <button class="btn-secondary" (click)="load()" [disabled]="loading">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        [class.animate-spin]="loading"
+        aria-hidden="true"
+      >
+        <path d="M1 4v6h6M23 20v-6h-6" />
+        <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
+      </svg>
+      Atualizar
+    </button>
+  </div>
+
+  <!-- Stats grid -->
+  <div
+    class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+    role="region"
+    aria-label="Indicadores do sistema"
+  >
+    @for (stat of stats; track stat.label; let i = $index) {
+      <div class="stat-card" [style.animation-delay]="i * 0.07 + 's'">
+        <div class="flex items-center justify-between mb-3">
+          <span
+            class="text-xs font-bold uppercase tracking-wider font-heading"
+            style="color: var(--text-muted)"
+            >{{ stat.label }}</span
+          >
+          <div
+            class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            [style.background]="stat.iconBg"
+          >
+            <span class="text-lg" aria-hidden="true">{{ stat.emoji }}</span>
+          </div>
+        </div>
+        <div class="text-2xl font-heading font-black mb-1" style="color: var(--text-primary)">
+          @if (loading) {
+            <span class="opacity-30">—</span>
+          } @else {
+            {{ stat.value }}
+          }
+        </div>
+        <div class="text-xs" style="color: var(--text-muted)">{{ stat.sub }}</div>
+      </div>
+    }
+  </div>
+
+  <!-- Bottom panels -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Recent appointments -->
+    <div class="card p-5" role="region" aria-label="Agendamentos recentes">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-heading font-semibold text-sm" style="color: var(--text-primary)">
+          Agendamentos Recentes
+        </h3>
+        <a
+          routerLink="/agendamentos"
+          class="text-xs font-semibold transition-colors"
+          style="color: var(--brand)"
+          aria-label="Ver todos os agendamentos"
+          >Ver todos →</a
+        >
+      </div>
+      @if (loading) {
+        <div class="space-y-3">
+          @for (i of [1, 2, 3]; track i) {
+            <div
+              class="h-12 rounded-lg animate-pulse"
+              style="background: var(--surface-tertiary)"
+            ></div>
+          }
+        </div>
+      } @else if (appointments.length === 0) {
+        <div class="text-center py-8 text-sm" style="color: var(--text-muted)">
+          Nenhum agendamento cadastrado
+        </div>
+      } @else {
+        <div class="space-y-2">
+          @for (a of appointments; track a.id) {
+            <div
+              class="flex items-center justify-between py-2.5 px-3 rounded-lg transition-colors"
+              style="border-bottom: 1px solid var(--surface-border)"
+              tabindex="0"
+            >
+              <div>
+                <div class="text-sm font-medium" style="color: var(--text-primary)">
+                  {{ a.customer?.name ?? '—' }}
+                </div>
+                <div class="text-xs" style="color: var(--text-muted)">{{ fmtDate(a.date) }}</div>
+              </div>
+              <div class="flex gap-1.5 flex-wrap justify-end">
+                <span class="badge" [class]="aptTypeClass(a.appointmentType)">{{
+                  aptTypeLabel(a.appointmentType)
+                }}</span>
+                <span class="badge" [class]="aptStatusClass(a.appointmentStatus)">{{
+                  aptStatusLabel(a.appointmentStatus)
+                }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Branches -->
+    <div class="card p-5" role="region" aria-label="Filiais ativas">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-heading font-semibold text-sm" style="color: var(--text-primary)">
+          Filiais
+        </h3>
+        <a
+          routerLink="/filiais"
+          class="text-xs font-semibold transition-colors"
+          style="color: var(--brand)"
+          aria-label="Ver todas as filiais"
+          >Ver todas →</a
+        >
+      </div>
+      @if (loading) {
+        <div class="space-y-3">
+          @for (i of [1, 2, 3]; track i) {
+            <div
+              class="h-14 rounded-lg animate-pulse"
+              style="background: var(--surface-tertiary)"
+            ></div>
+          }
+        </div>
+      } @else if (branches.length === 0) {
+        <div class="text-center py-8 text-sm" style="color: var(--text-muted)">
+          Nenhuma filial cadastrada
+        </div>
+      } @else {
+        <div class="space-y-2">
+          @for (b of branches; track b.id) {
+            <div
+              class="flex items-center gap-3 py-2.5 px-3 rounded-lg"
+              style="border-bottom: 1px solid var(--surface-border)"
+            >
+              <div
+                class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-heading font-bold text-sm"
+                style="background: rgba(234, 88, 12, 0.12); color: var(--brand)"
+              >
+                {{ (b.name ?? 'F')[0] }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate" style="color: var(--text-primary)">
+                  {{ b.name }}
+                </div>
+                <div class="text-xs" style="color: var(--text-muted)">
+                  {{ b.address?.city ?? '—' }}, {{ b.address?.state ?? '' }}
+                </div>
+              </div>
+              <span class="badge badge-green text-xs">{{ b.status ?? 'Ativo' }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</div>

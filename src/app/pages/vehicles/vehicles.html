@@ -1,0 +1,360 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Veículos</h2>
+      <p class="page-subtitle">Cadastro e gerenciamento do catálogo</p>
+    </div>
+    <button class="btn-brand" (click)="openNew()">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Novo Veículo
+    </button>
+  </div>
+
+  <div class="card overflow-hidden">
+    <!-- Toolbar -->
+    <div
+      class="p-4 flex flex-wrap gap-3 items-center justify-between"
+      style="border-bottom: 1px solid var(--surface-border)"
+    >
+      <div class="relative">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          style="color: var(--text-muted)"
+          aria-hidden="true"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          type="search"
+          class="form-input pl-9 w-64"
+          placeholder="Buscar veículo..."
+          [(ngModel)]="searchQuery"
+          (input)="onSearch()"
+          aria-label="Buscar veículo"
+        />
+      </div>
+      <select
+        class="form-input w-auto text-sm"
+        [(ngModel)]="typeFilter"
+        (change)="onSearch()"
+        aria-label="Filtrar por tipo"
+      >
+        <option value="">Todos os tipos</option>
+        <option value="CAR">Carro</option>
+        <option value="MOTORCYCLE">Moto</option>
+        <option value="TRUCK">Caminhão</option>
+        <option value="VAN">Van</option>
+      </select>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+      <table class="data-table" role="grid" aria-label="Lista de veículos">
+        <thead>
+          <tr>
+            <th scope="col">Veículo</th>
+            <th scope="col">Tipo</th>
+            <th scope="col">Ano</th>
+            <th scope="col">Combustível</th>
+            <th scope="col">Km</th>
+            <th scope="col">Preço</th>
+            <th scope="col">Status</th>
+            <th scope="col">Disponibilidade</th>
+            <th scope="col"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading) {
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <tr>
+                @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track j) {
+                  <td>
+                    <div
+                      class="h-4 rounded animate-pulse"
+                      style="background: var(--surface-tertiary)"
+                    ></div>
+                  </td>
+                }
+              </tr>
+            }
+          } @else if (filtered.length === 0) {
+            <tr>
+              <td colspan="9" class="text-center py-10 text-sm" style="color: var(--text-muted)">
+                Nenhum veículo encontrado
+              </td>
+            </tr>
+          } @else {
+            @for (v of filtered; track v.id) {
+              <tr>
+                <td>
+                  <div class="font-medium" style="color: var(--text-primary)">
+                    {{ v.brand }} {{ v.model }}
+                  </div>
+                  <div class="text-xs" style="color: var(--text-muted)">{{ v.color }}</div>
+                </td>
+                <td>
+                  <span class="badge badge-blue">{{ v.type }}</span>
+                </td>
+                <td>{{ v.manufactureYear ? getYear(v.manufactureYear) : '—' }}</td>
+                <td>{{ fuelLabel(v.fuelType) }}</td>
+                <td class="font-mono text-xs">{{ fmtMileage(v.mileage) }}</td>
+                <td class="font-semibold" style="color: #4ade80">{{ fmtCurrency(v.salePrice) }}</td>
+                <td>
+                  <span class="badge" [class]="vehicleStatusClass(v.status ?? '')">{{
+                    vehicleStatusLabel(v.status ?? '')
+                  }}</span>
+                </td>
+                <td>
+                  <span class="badge" [class]="availClass(v.availability ?? '')">{{
+                    availLabel(v.availability ?? '')
+                  }}</span>
+                </td>
+                <td>
+                  <div class="flex gap-1.5">
+                    <button
+                      class="btn-edit"
+                      (click)="openEdit(v)"
+                      [attr.aria-label]="'Editar ' + v.brand + ' ' + v.model"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      class="btn-danger"
+                      (click)="delete(v)"
+                      [attr.aria-label]="'Excluir ' + v.brand + ' ' + v.model"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      class="p-4 flex flex-wrap items-center justify-between gap-3"
+      style="border-top: 1px solid var(--surface-border)"
+    >
+      <span class="text-xs" style="color: var(--text-muted)"
+        >{{ totalElements }} veículo(s) encontrado(s)</span
+      >
+      <app-pagination
+        [totalElements]="totalElements"
+        [pageSize]="12"
+        [currentPage]="page"
+        (pageChange)="onPage($event)"
+      />
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <app-modal
+    [title]="editId ? 'Editar Veículo' : 'Novo Veículo'"
+    [open]="modalOpen"
+    (closeModal)="modalOpen = false"
+  >
+    <ng-container slot="body">
+      <form [formGroup]="form" class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="form-label" for="v-brand">Marca *</label>
+          <input id="v-brand" class="form-input" formControlName="brand" placeholder="Toyota" />
+        </div>
+        <div>
+          <label class="form-label" for="v-model">Modelo *</label>
+          <input id="v-model" class="form-input" formControlName="model" placeholder="Corolla" />
+        </div>
+        <div>
+          <label class="form-label" for="v-type">Tipo *</label>
+          <select id="v-type" class="form-input" formControlName="type">
+            <option value="CAR">Carro</option>
+            <option value="MOTORCYCLE">Moto</option>
+            <option value="VAN">Van</option>
+            <option value="BUS">Ônibus</option>
+            <option value="TRUCK">Caminhão</option>
+            <option value="BOAT">Barco</option>
+            <option value="OTHER_VEHICLE_TYPE">Outro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="v-cat">Categoria *</label>
+          <select id="v-cat" class="form-input" formControlName="category">
+            <option value="SUV">SUV</option>
+            <option value="SEDAN">Sedan</option>
+            <option value="HATCHBACK">Hatchback</option>
+            <option value="SPORTS">Esportivo</option>
+            <option value="PICKUP">Pickup</option>
+            <option value="ELECTRIC">Elétrico</option>
+            <option value="HYBRID">Híbrido</option>
+            <option value="OTHERS">Outro</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="v-year">Ano Fabricação *</label>
+          <input id="v-year" type="date" class="form-input" formControlName="manufactureYear" />
+        </div>
+        <div>
+          <label class="form-label" for="v-color">Cor *</label>
+          <input id="v-color" class="form-input" formControlName="color" placeholder="Branco" />
+        </div>
+        <div>
+          <label class="form-label" for="v-km">Quilometragem *</label>
+          <input
+            id="v-km"
+            type="number"
+            class="form-input"
+            formControlName="mileage"
+            placeholder="0"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="v-weight">Peso (kg) *</label>
+          <input
+            id="v-weight"
+            type="number"
+            class="form-input"
+            formControlName="weight"
+            placeholder="1200"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="v-fuel">Combustível *</label>
+          <select id="v-fuel" class="form-input" formControlName="fuelType">
+            <option value="GASOLINE">Gasolina</option>
+            <option value="DIESEL">Diesel</option>
+            <option value="ELECTRIC">Elétrico</option>
+            <option value="HYBRID">Híbrido</option>
+            <option value="ETHANOL">Etanol</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="v-cyl">Cilindros *</label>
+          <input
+            id="v-cyl"
+            type="number"
+            class="form-input"
+            formControlName="numberOfCylinders"
+            placeholder="4"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="v-power">Potência (cv) *</label>
+          <input
+            id="v-power"
+            type="number"
+            class="form-input"
+            formControlName="enginePower"
+            placeholder="150"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="v-tank">Tanque (L) *</label>
+          <input
+            id="v-tank"
+            type="number"
+            class="form-input"
+            formControlName="fuelTankCapacity"
+            placeholder="50"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="v-pass">Passageiros *</label>
+          <input
+            id="v-pass"
+            type="number"
+            class="form-input"
+            formControlName="passengerCapacity"
+            placeholder="5"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="v-price">Preço (R$) *</label>
+          <input
+            id="v-price"
+            type="number"
+            class="form-input"
+            formControlName="salePrice"
+            placeholder="0.00"
+            step="0.01"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="v-status">Status</label>
+          <select id="v-status" class="form-input" formControlName="status">
+            <option value="NEW">Novo</option>
+            <option value="USED">Usado</option>
+            <option value="SEMINOVO">Seminovo</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="v-avail">Disponibilidade</label>
+          <select id="v-avail" class="form-input" formControlName="availability">
+            <option value="AVAILABLE">Disponível</option>
+            <option value="SOLD">Vendido</option>
+            <option value="PENDING">Pendente</option>
+            <option value="RESERVED">Reservado</option>
+            <option value="IN_NEGOTIATION">Em Negociação</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="form-label" for="v-info">Infotainment *</label>
+          <input
+            id="v-info"
+            class="form-input"
+            formControlName="infotainmentSystem"
+            placeholder="Android Auto, CarPlay..."
+          />
+        </div>
+        <div class="col-span-2">
+          <label class="form-label" for="v-desc">Descrição *</label>
+          <textarea
+            id="v-desc"
+            class="form-input"
+            formControlName="description"
+            rows="2"
+            placeholder="Descrição..."
+          ></textarea>
+        </div>
+      </form>
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="save()" [disabled]="saving">
+        @if (saving) {
+          <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-dasharray="30 60"
+              stroke-linecap="round"
+            />
+          </svg>
+        }
+        Salvar
+      </button>
+    </ng-container>
+  </app-modal>
+</div>

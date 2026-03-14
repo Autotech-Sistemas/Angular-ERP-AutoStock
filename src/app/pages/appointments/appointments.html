@@ -1,0 +1,157 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Agendamentos</h2>
+      <p class="page-subtitle">Test-drives e visitas de negociação</p>
+    </div>
+    <button class="btn-brand" (click)="openNew()">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Novo Agendamento
+    </button>
+  </div>
+
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="data-table" aria-label="Lista de agendamentos">
+        <thead>
+          <tr>
+            <th scope="col">Data</th>
+            <th scope="col">Cliente</th>
+            <th scope="col">Vendedor</th>
+            <th scope="col">Tipo</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading) {
+            @for (i of [1, 2, 3, 4]; track i) {
+              <tr>
+                @for (j of [1, 2, 3, 4, 5, 6]; track j) {
+                  <td>
+                    <div
+                      class="h-4 rounded animate-pulse"
+                      style="background: var(--surface-tertiary)"
+                    ></div>
+                  </td>
+                }
+              </tr>
+            }
+          } @else if (items.length === 0) {
+            <tr>
+              <td colspan="6" class="text-center py-10 text-sm" style="color: var(--text-muted)">
+                Nenhum agendamento cadastrado
+              </td>
+            </tr>
+          } @else {
+            @for (a of items; track a.id) {
+              <tr>
+                <td class="font-mono text-xs">{{ fmtDate(a.date) }}</td>
+                <td style="color: var(--text-primary)">{{ a.customer?.name ?? '—' }}</td>
+                <td>{{ a.seller?.name ?? '—' }}</td>
+                <td>
+                  <span class="badge" [class]="aptTypeClass(a.appointmentType)">
+                    {{ aptTypeLabel(a.appointmentType) }}
+                  </span>
+                </td>
+                <td>
+                  <select
+                    class="form-input text-xs py-1"
+                    style="width: 140px; padding-top: 4px; padding-bottom: 4px"
+                    [value]="a.appointmentStatus"
+                    (change)="updateStatus(a, $event)"
+                    [attr.aria-label]="'Status do agendamento de ' + (a.customer?.name ?? '')"
+                  >
+                    <option value="PENDING">Pendente</option>
+                    <option value="COMPLETED">Concluído</option>
+                    <option value="CANCELLED">Cancelado</option>
+                  </select>
+                </td>
+                <td>
+                  <button
+                    class="btn-danger"
+                    (click)="delete(a)"
+                    [attr.aria-label]="'Excluir agendamento de ' + (a.customer?.name ?? '')"
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <div
+      class="p-4 flex flex-wrap items-center justify-between gap-3"
+      style="border-top: 1px solid var(--surface-border)"
+    >
+      <span class="text-xs" style="color: var(--text-muted)"
+        >{{ totalElements }} agendamento(s)</span
+      >
+      <app-pagination
+        [totalElements]="totalElements"
+        [pageSize]="12"
+        [currentPage]="page"
+        (pageChange)="load($event)"
+      />
+    </div>
+  </div>
+
+  <app-modal title="Novo Agendamento" [open]="modalOpen" (closeModal)="modalOpen = false">
+    <ng-container slot="body">
+      <form [formGroup]="form" class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="form-label" for="apt-cust">Cliente *</label>
+          <select id="apt-cust" class="form-input" formControlName="customerId">
+            @for (c of customers; track c.id) {
+              <option [value]="c.id">{{ c.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="apt-seller">Vendedor *</label>
+          <select id="apt-seller" class="form-input" formControlName="sellerId">
+            @for (s of sellers; track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="apt-date">Data *</label>
+          <input id="apt-date" type="date" class="form-input" formControlName="date" />
+        </div>
+        <div>
+          <label class="form-label" for="apt-type">Tipo *</label>
+          <select id="apt-type" class="form-input" formControlName="appointmentType">
+            <option value="TEST_DRIVE">Test Drive</option>
+            <option value="NEGOTIATION_VISIT">Visita de Negociação</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="apt-status">Status</label>
+          <select id="apt-status" class="form-input" formControlName="appointmentStatus">
+            <option value="PENDING">Pendente</option>
+            <option value="COMPLETED">Concluído</option>
+            <option value="CANCELLED">Cancelado</option>
+          </select>
+        </div>
+      </form>
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="save()">Agendar</button>
+    </ng-container>
+  </app-modal>
+</div>

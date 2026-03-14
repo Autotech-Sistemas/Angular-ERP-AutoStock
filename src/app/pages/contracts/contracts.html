@@ -1,0 +1,182 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Contratos</h2>
+      <p class="page-subtitle">Gestão de contratos e documentos</p>
+    </div>
+    <button class="btn-brand" (click)="openNew()">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Novo Contrato
+    </button>
+  </div>
+  @if (loading) {
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="card p-5 h-48 animate-pulse" style="background: var(--surface-tertiary)"></div>
+      }
+    </div>
+  } @else if (items.length === 0) {
+    <div class="text-center py-20 text-sm" style="color: var(--text-muted)">
+      Nenhum contrato encontrado
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" role="list">
+      @for (c of items; track c.id) {
+        <div class="branch-card" role="listitem">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <div class="font-heading font-bold text-sm" style="color: var(--text-primary)">
+                {{ c.contractNumber ?? '—' }}
+              </div>
+              <div class="text-xs mt-0.5" style="color: var(--text-muted)">
+                {{ c.contractType ?? '—' }}
+              </div>
+            </div>
+            <span class="badge" [class]="statusClass(c.contractStatus)">{{
+              statusLabel(c.contractStatus)
+            }}</span>
+          </div>
+          <div class="space-y-1 text-xs mb-4" style="color: var(--text-muted)">
+            <div>
+              Cliente:
+              <span style="color: var(--text-primary)">{{ c.sale?.customer?.name ?? '—' }}</span>
+            </div>
+            <div>
+              Veículo:
+              <span style="color: var(--text-primary)"
+                >{{ c.sale?.inventoryItem?.vehicle?.brand ?? '—' }}
+                {{ c.sale?.inventoryItem?.vehicle?.model ?? '' }}</span
+              >
+            </div>
+            <div>
+              Data: <span style="color: var(--text-primary)">{{ fmtDate(c.contractDate) }}</span>
+            </div>
+            <div>
+              Entrega: <span style="color: var(--text-primary)">{{ fmtDate(c.deliveryDate) }}</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="font-heading font-bold" style="color: #4ade80">
+              {{ fmtCurrency(c.totalAmount) }}
+            </div>
+            <button
+              class="btn-danger"
+              (click)="delete(c)"
+              [attr.aria-label]="'Excluir contrato ' + c.contractNumber"
+            >
+              Excluir
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+    <div class="mt-4 flex justify-end">
+      <app-pagination
+        [totalElements]="totalElements"
+        [pageSize]="12"
+        [currentPage]="page"
+        (pageChange)="load($event)"
+      />
+    </div>
+  }
+
+  <app-modal title="Novo Contrato" [open]="modalOpen" (closeModal)="modalOpen = false">
+    <ng-container slot="body">
+      <form [formGroup]="form" class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="form-label" for="ct-num">Nº Contrato *</label
+          ><input
+            id="ct-num"
+            class="form-input"
+            formControlName="contractNumber"
+            placeholder="CONT-001"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="ct-type">Tipo *</label
+          ><input
+            id="ct-type"
+            class="form-input"
+            formControlName="contractType"
+            placeholder="Compra e Venda"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="ct-date">Data Contrato *</label
+          ><input id="ct-date" type="date" class="form-input" formControlName="contractDate" />
+        </div>
+        <div>
+          <label class="form-label" for="ct-del">Data Entrega *</label
+          ><input id="ct-del" type="date" class="form-input" formControlName="deliveryDate" />
+        </div>
+        <div>
+          <label class="form-label" for="ct-amt">Valor Total *</label
+          ><input
+            id="ct-amt"
+            type="number"
+            class="form-input"
+            formControlName="totalAmount"
+            step="0.01"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="ct-pay">Pagamento *</label>
+          <select id="ct-pay" class="form-input" formControlName="paymentTerms">
+            <option value="CASH">À Vista</option>
+            <option value="PIX">PIX</option>
+            <option value="INSTALLMENTS_WITHOUT_INTEREST">Parcelado s/ Juros</option>
+            <option value="FINANCED_BY_BANK">Financiado</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="ct-st">Status</label>
+          <select id="ct-st" class="form-input" formControlName="contractStatus">
+            <option value="PENDING">Pendente</option>
+            <option value="SIGNED">Assinado</option>
+            <option value="CANCELLED">Cancelado</option>
+            <option value="EXPIRED">Expirado</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="ct-sale">Venda *</label>
+          <select id="ct-sale" class="form-input" formControlName="saleId">
+            @for (s of sales; track s.id) {
+              <option [value]="s.id">
+                {{ fmtDate(s.saleDate) }} — {{ s.customer?.name }} —
+                {{ fmtCurrency(s.grossAmount) }}
+              </option>
+            }
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="form-label" for="ct-notes">Observações</label
+          ><textarea id="ct-notes" class="form-input" formControlName="notes" rows="2"></textarea>
+        </div>
+        <div class="col-span-2">
+          <label class="form-label" for="ct-att">Anexos</label
+          ><input
+            id="ct-att"
+            class="form-input"
+            formControlName="attachments"
+            placeholder="URL ou nome do arquivo"
+          />
+        </div>
+      </form>
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="save()">Salvar Contrato</button>
+    </ng-container>
+  </app-modal>
+</div>

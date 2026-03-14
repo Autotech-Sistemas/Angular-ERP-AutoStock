@@ -1,0 +1,163 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Vendedores</h2>
+      <p class="page-subtitle">Equipe de vendas</p>
+    </div>
+    <button class="btn-brand" (click)="openNew()">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Novo Vendedor
+    </button>
+  </div>
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="data-table" aria-label="Lista de vendedores">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Telefone</th>
+            <th>Salário</th>
+            <th>Comissão</th>
+            <th>Contratação</th>
+            <th>Status</th>
+            <th><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading) {
+            @for (i of [1, 2, 3]; track i) {
+              <tr>
+                @for (j of [1, 2, 3, 4, 5, 6, 7, 8]; track j) {
+                  <td>
+                    <div
+                      class="h-4 rounded animate-pulse"
+                      style="background: var(--surface-tertiary)"
+                    ></div>
+                  </td>
+                }
+              </tr>
+            }
+          } @else if (items.length === 0) {
+            <tr>
+              <td colspan="8" class="text-center py-10 text-sm" style="color: var(--text-muted)">
+                Nenhum vendedor cadastrado
+              </td>
+            </tr>
+          } @else {
+            @for (s of items; track s.id) {
+              <tr>
+                <td style="color: var(--text-primary)">
+                  {{ s.name }}
+                </td>
+                <td>{{ s.email }}</td>
+                <td>{{ s.phone ?? '—' }}</td>
+                <td>—</td>
+                <td>—</td>
+                <td>—</td>
+                <td>
+                  <span class="badge badge-green">Ativo</span>
+                </td>
+                <td>
+                  <button
+                    class="btn-danger"
+                    (click)="delete(s)"
+                    [attr.aria-label]="'Excluir ' + s.name"
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <div
+      class="p-4 flex items-center justify-between"
+      style="border-top: 1px solid var(--surface-border)"
+    >
+      <span class="text-xs" style="color: var(--text-muted)">{{ totalElements }} vendedor(es)</span>
+      <app-pagination
+        [totalElements]="totalElements"
+        [pageSize]="12"
+        [currentPage]="page"
+        (pageChange)="load($event)"
+      />
+    </div>
+  </div>
+
+  <app-modal title="Novo Vendedor" [open]="modalOpen" (closeModal)="modalOpen = false">
+    <ng-container slot="body">
+      <form [formGroup]="form" class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="form-label" for="sel-name">Nome *</label
+          ><input
+            id="sel-name"
+            class="form-input"
+            formControlName="name"
+            placeholder="NOME DO VENDEDOR"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="sel-email">Email *</label
+          ><input id="sel-email" type="email" class="form-input" formControlName="email" />
+        </div>
+        <div>
+          <label class="form-label" for="sel-pass">Senha *</label
+          ><input id="sel-pass" type="password" class="form-input" formControlName="password" />
+        </div>
+        <div>
+          <label class="form-label" for="sel-phone">Telefone</label
+          ><input
+            id="sel-phone"
+            class="form-input"
+            formControlName="phone"
+            placeholder="(00) 00000-0000"
+            (input)="onPhone($event)"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="sel-hire">Contratação *</label
+          ><input id="sel-hire" type="date" class="form-input" formControlName="hireDate" />
+        </div>
+        <div>
+          <label class="form-label" for="sel-sal">Salário *</label
+          ><input
+            id="sel-sal"
+            type="number"
+            class="form-input"
+            formControlName="salary"
+            step="0.01"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="sel-comm">Comissão (%) *</label
+          ><input
+            id="sel-comm"
+            type="number"
+            class="form-input"
+            formControlName="commissionRate"
+            step="0.1"
+            placeholder="5.0"
+          />
+        </div>
+      </form>
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="save()">Salvar</button>
+    </ng-container>
+  </app-modal>
+</div>

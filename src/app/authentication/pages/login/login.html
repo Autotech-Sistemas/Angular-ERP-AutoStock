@@ -1,0 +1,268 @@
+<div class="min-h-screen flex" style="background: var(--surface)">
+  <!-- Left panel -->
+  <div
+    class="hidden lg:flex flex-col justify-between w-1/2 relative overflow-hidden p-12"
+    style="background: var(--surface-secondary); border-right: 1px solid var(--surface-border)"
+  >
+    <!-- Decorative background -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+      <div
+        class="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-[0.06]"
+        style="background: radial-gradient(circle, var(--brand) 0%, transparent 70%)"
+      ></div>
+      <div
+        class="absolute bottom-20 -left-20 w-80 h-80 rounded-full opacity-[0.04]"
+        style="background: radial-gradient(circle, var(--brand-light) 0%, transparent 70%)"
+      ></div>
+      <!-- Grid pattern -->
+      <svg
+        class="absolute inset-0 w-full h-full opacity-[0.025]"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--text-primary)" stroke-width="1" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+    </div>
+
+    <!-- Logo -->
+    <div class="relative z-10 animate-fade-in">
+      <div class="flex items-center gap-3 mb-2">
+        <div
+          class="w-12 h-12 rounded-2xl flex items-center justify-center"
+          style="background: linear-gradient(135deg, var(--brand), var(--brand-dark))"
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3m-4 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
+        <span
+          class="font-heading font-black text-2xl tracking-tight"
+          style="color: var(--text-primary)"
+        >
+          Auto<span style="color: var(--brand)">Stock</span>
+        </span>
+      </div>
+      <p class="text-sm" style="color: var(--text-muted)">Sistema ERP para Concessionárias</p>
+    </div>
+
+    <!-- Central content -->
+    <div class="relative z-10 animate-slide-in-up">
+      <h2
+        class="font-heading font-black text-4xl leading-tight mb-6"
+        style="color: var(--text-primary)"
+      >
+        Gestão completa<br />
+        <span
+          style="
+            background: linear-gradient(135deg, var(--brand-light), var(--brand));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          "
+        >
+          em uma plataforma
+        </span>
+      </h2>
+      <div class="space-y-4">
+        @for (feat of features; track feat.label) {
+          <div class="flex items-center gap-3">
+            <div
+              class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style="background: rgba(234, 88, 12, 0.12); border: 1px solid rgba(234, 88, 12, 0.2)"
+            >
+              <span style="color: var(--brand)" class="text-sm" aria-hidden="true">{{
+                feat.icon
+              }}</span>
+            </div>
+            <span class="text-sm" style="color: var(--text-secondary)">{{ feat.label }}</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="relative z-10 text-xs" style="color: var(--text-muted)">
+      © {{ year }} AutoStock · ERP Automotivo
+    </div>
+  </div>
+
+  <!-- Right panel — form -->
+  <div class="flex-1 flex items-center justify-center p-6 lg:p-12">
+    <div class="w-full max-w-sm animate-slide-in-right">
+      <!-- Mobile logo -->
+      <div class="lg:hidden flex items-center gap-2 mb-8">
+        <div
+          class="w-9 h-9 rounded-xl flex items-center justify-center"
+          style="background: linear-gradient(135deg, var(--brand), var(--brand-dark))"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            stroke-width="2.5"
+            aria-hidden="true"
+          >
+            <path
+              d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3m-4 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
+          </svg>
+        </div>
+        <span class="font-heading font-black text-xl" style="color: var(--text-primary)">
+          Auto<span style="color: var(--brand)">Stock</span>
+        </span>
+      </div>
+
+      <div class="mb-8">
+        <h1 class="font-heading font-bold text-2xl mb-1" style="color: var(--text-primary)">
+          Bem-vindo de volta
+        </h1>
+        <p class="text-sm" style="color: var(--text-muted)">Faça login para acessar o sistema</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <!-- Email -->
+        <div class="mb-4">
+          <label for="email" class="form-label">E-mail</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            class="form-input"
+            placeholder="seu@email.com"
+            autocomplete="username"
+            [class.border-red-500]="emailInvalid"
+          />
+          @if (emailInvalid) {
+            <p class="text-xs mt-1" style="color: var(--danger)" role="alert">E-mail inválido</p>
+          }
+        </div>
+
+        <!-- Password -->
+        <div class="mb-6">
+          <label for="password" class="form-label">Senha</label>
+          <div class="relative">
+            <input
+              id="password"
+              [type]="showPass() ? 'text' : 'password'"
+              formControlName="password"
+              class="form-input pr-10"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              [class.border-red-500]="passInvalid"
+            />
+            <button
+              type="button"
+              class="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+              style="color: var(--text-muted)"
+              (click)="showPass.update(v => !v)"
+              [attr.aria-label]="showPass() ? 'Ocultar senha' : 'Mostrar senha'"
+            >
+              @if (showPass()) {
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"
+                  />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              } @else {
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  aria-hidden="true"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              }
+            </button>
+          </div>
+          @if (passInvalid) {
+            <p class="text-xs mt-1" style="color: var(--danger)" role="alert">
+              Mínimo 4 caracteres
+            </p>
+          }
+        </div>
+
+        <!-- Error banner -->
+        @if (error()) {
+          <div
+            class="mb-4 px-4 py-3 rounded-lg text-sm animate-fade-in"
+            style="
+              background: rgba(220, 38, 38, 0.1);
+              color: var(--danger);
+              border: 1px solid rgba(220, 38, 38, 0.2);
+            "
+            role="alert"
+          >
+            {{ error() }}
+          </div>
+        }
+
+        <!-- Submit -->
+        <button type="submit" class="btn-brand w-full justify-center py-3" [disabled]="loading()">
+          @if (loading()) {
+            <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-dasharray="30 60"
+                stroke-linecap="round"
+              />
+            </svg>
+            Autenticando...
+          } @else {
+            Entrar no sistema
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              aria-hidden="true"
+            >
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          }
+        </button>
+
+        <p class="text-center text-xs mt-4" style="color: var(--text-muted)">
+          Modo demo: qualquer e-mail e senha funcionam
+        </p>
+      </form>
+    </div>
+  </div>
+</div>

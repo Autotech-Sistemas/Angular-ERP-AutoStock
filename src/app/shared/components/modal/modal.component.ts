@@ -1,0 +1,43 @@
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+@Component({
+  selector: 'app-modal',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    @if (open) {
+      <div class="modal-overlay" (click)="onOverlayClick($event)"
+           role="dialog" [attr.aria-modal]="true" [attr.aria-label]="title">
+        <div class="modal-box" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h2 class="font-heading font-bold text-base" style="color: var(--text-primary)">{{ title }}</h2>
+            <button class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                    style="color: var(--text-muted)"
+                    (click)="closeModal.emit()"
+                    aria-label="Fechar modal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <ng-content select="[slot=body]"/>
+          </div>
+          <div class="modal-footer">
+            <ng-content select="[slot=footer]"/>
+          </div>
+        </div>
+      </div>
+    }
+  `,
+})
+export class ModalComponent {
+  @Input() title = '';
+  @Input() open  = false;
+  @Output() closeModal = new EventEmitter<void>();
+
+  onOverlayClick(e: MouseEvent): void {
+    if (e.target === e.currentTarget) this.closeModal.emit();
+  }
+}

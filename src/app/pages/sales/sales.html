@@ -1,0 +1,230 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Vendas</h2>
+      <p class="page-subtitle">Registro e histórico de vendas</p>
+    </div>
+    <button class="btn-brand" (click)="openNew()">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Nova Venda
+    </button>
+  </div>
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="data-table" aria-label="Histórico de vendas">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Vendedor</th>
+            <th>Veículo</th>
+            <th>Valor Bruto</th>
+            <th>Desconto</th>
+            <th>Valor Líquido</th>
+            <th>Pagamento</th>
+            <th><span class="sr-only">Ações</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading) {
+            @for (i of [1, 2, 3]; track i) {
+              <tr>
+                @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track j) {
+                  <td>
+                    <div
+                      class="h-4 rounded animate-pulse"
+                      style="background: var(--surface-tertiary)"
+                    ></div>
+                  </td>
+                }
+              </tr>
+            }
+          } @else if (items.length === 0) {
+            <tr>
+              <td colspan="9" class="text-center py-10 text-sm" style="color: var(--text-muted)">
+                Nenhuma venda registrada
+              </td>
+            </tr>
+          } @else {
+            @for (s of items; track s.id) {
+              <tr>
+                <td>{{ fmtDate(s.saleDate) }}</td>
+                <td style="color: var(--text-primary)">
+                  {{ s.customer?.name ?? '—' }}
+                </td>
+                <td>{{ s.seller?.name ?? '—' }}</td>
+                <td>
+                  {{ s.inventoryItem?.vehicle?.brand ?? '—' }}
+                  {{ s.inventoryItem?.vehicle?.model ?? '' }}
+                </td>
+                <td>{{ fmtCurrency(s.grossAmount) }}</td>
+                <td style="color: var(--danger)">
+                  {{ s.appliedDiscount ? '- ' + fmtCurrency(s.appliedDiscount) : '—' }}
+                </td>
+                <td class="font-semibold" style="color: #4ade80">
+                  {{ fmtCurrency(s.netAmount ?? s.grossAmount) }}
+                </td>
+                <td>
+                  <span class="badge badge-blue text-xs">
+                    {{ s.paymentMethod ?? '—' }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    class="btn-danger"
+                    (click)="delete(s)"
+                    [attr.aria-label]="'Excluir venda de ' + (s.customer?.name ?? '')"
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <div
+      class="p-4 flex flex-wrap items-center justify-between gap-3"
+      style="border-top: 1px solid var(--surface-border)"
+    >
+      <span class="text-xs" style="color: var(--text-muted)">{{ totalElements }} venda(s)</span>
+      <app-pagination
+        [totalElements]="totalElements"
+        [pageSize]="12"
+        [currentPage]="page"
+        (pageChange)="load($event)"
+      />
+    </div>
+  </div>
+
+  <app-modal title="Registrar Venda" [open]="modalOpen" (closeModal)="modalOpen = false">
+    <ng-container slot="body">
+      <form [formGroup]="form" class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="form-label" for="s-cust">Cliente *</label>
+          <select id="s-cust" class="form-input" formControlName="customerId">
+            @for (c of customers; track c.id) {
+              <option [value]="c.id">{{ c.name }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="s-seller">Vendedor *</label>
+          <select id="s-seller" class="form-input" formControlName="sellerId">
+            @for (s of sellers; track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label class="form-label" for="s-inv">Item de Estoque *</label>
+          <select
+            id="s-inv"
+            class="form-input"
+            formControlName="inventoryId"
+            (change)="fillPrice()"
+          >
+            @for (i of inventory; track i.id) {
+              <option [value]="i.id" [attr.data-price]="i.vehicle?.salePrice">
+                {{ i.vehicle?.brand }} {{ i.vehicle?.model }} — {{ i.licensePlate ?? 'sem placa' }}
+              </option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="form-label" for="s-date">Data da Venda *</label
+          ><input id="s-date" type="date" class="form-input" formControlName="saleDate" />
+        </div>
+        <div>
+          <label class="form-label" for="s-pay">Forma de Pagamento *</label>
+          <select
+            id="s-pay"
+            class="form-input"
+            formControlName="paymentMethod"
+            (change)="toggleInstallments()"
+          >
+            <option value="CASH">À Vista</option>
+            <option value="CREDIT_CARD">Cartão Crédito</option>
+            <option value="DEBIT_CARD">Cartão Débito</option>
+            <option value="PIX">PIX</option>
+            <option value="BANK_TRANSFER">Transferência</option>
+            <option value="INSTALLMENTS_WITHOUT_INTEREST">Parcelado s/ Juros</option>
+            <option value="INSTALLMENTS_WITH_INTEREST">Parcelado c/ Juros</option>
+            <option value="FINANCED_BY_BANK">Financiado Banco</option>
+            <option value="FINANCED_BY_DEALERSHIP">Financiado Concessionária</option>
+          </select>
+        </div>
+        @if (showInstallments) {
+          <div class="col-span-2">
+            <label class="form-label" for="s-inst">Nº Parcelas</label
+            ><input
+              id="s-inst"
+              type="number"
+              class="form-input"
+              formControlName="installmentsNumber"
+              placeholder="12"
+              min="1"
+            />
+          </div>
+        }
+        <div>
+          <label class="form-label" for="s-gross">Valor Bruto (R$) *</label
+          ><input
+            id="s-gross"
+            type="number"
+            class="form-input"
+            formControlName="grossAmount"
+            step="0.01"
+            (input)="calcNet()"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="s-disc">Desconto (R$)</label
+          ><input
+            id="s-disc"
+            type="number"
+            class="form-input"
+            formControlName="appliedDiscount"
+            step="0.01"
+            placeholder="0.00"
+            (input)="calcNet()"
+          />
+        </div>
+        <div class="col-span-2">
+          <label class="form-label">Valor Líquido</label>
+          <div
+            class="form-input font-heading font-bold text-lg"
+            style="color: #4ade80; background: var(--surface); cursor: default"
+          >
+            {{ netDisplay }}
+          </div>
+        </div>
+        <div class="col-span-2">
+          <label class="form-label" for="s-rcpt">Recibo *</label
+          ><input
+            id="s-rcpt"
+            class="form-input"
+            formControlName="receipt"
+            placeholder="Nº do recibo"
+          />
+        </div>
+      </form>
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="save()">Confirmar Venda</button>
+    </ng-container>
+  </app-modal>
+</div>

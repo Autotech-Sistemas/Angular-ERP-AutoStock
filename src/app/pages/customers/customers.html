@@ -1,0 +1,305 @@
+<div class="page-content">
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Clientes</h2>
+      <p class="page-subtitle">Base de clientes cadastrados</p>
+    </div>
+    <button class="btn-brand" (click)="openNew()">
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Novo Cliente
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div
+    class="flex gap-1 mb-4 pb-3"
+    style="border-bottom: 1px solid var(--surface-border)"
+    role="tablist"
+  >
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'list'"
+      (click)="activeTab = 'list'"
+      role="tab"
+      aria-controls="tab-list"
+      [attr.aria-selected]="activeTab === 'list'"
+    >
+      Listagem
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab === 'address'"
+      (click)="activeTab = 'address'; loadAddresses()"
+      role="tab"
+      aria-controls="tab-address"
+      [attr.aria-selected]="activeTab === 'address'"
+    >
+      Endereços
+    </button>
+  </div>
+
+  @if (activeTab === 'list') {
+    <div id="tab-list" role="tabpanel">
+      <div class="card p-4 mb-4">
+        <div class="relative">
+          <svg
+            class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="color: var(--text-muted)"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="search"
+            class="form-input pl-9"
+            placeholder="Buscar por nome, CPF ou email..."
+            [(ngModel)]="searchQuery"
+            (input)="applyFilter()"
+            aria-label="Buscar clientes"
+          />
+        </div>
+      </div>
+      <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="data-table" aria-label="Lista de clientes">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Email</th>
+                <th>Telefone</th>
+                <th>Tipo</th>
+                <th>CNH</th>
+                <th>Cadastro</th>
+                <th><span class="sr-only">Ações</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (loading) {
+                @for (i of [1, 2, 3]; track i) {
+                  <tr>
+                    @for (j of [1, 2, 3, 4, 5, 6, 7, 8]; track j) {
+                      <td>
+                        <div
+                          class="h-4 rounded animate-pulse"
+                          style="background: var(--surface-tertiary)"
+                        ></div>
+                      </td>
+                    }
+                  </tr>
+                }
+              } @else if (filtered.length === 0) {
+                <tr>
+                  <td
+                    colspan="8"
+                    class="text-center py-10 text-sm"
+                    style="color: var(--text-muted)"
+                  >
+                    Nenhum cliente encontrado
+                  </td>
+                </tr>
+              } @else {
+                @for (c of filtered; track c.id) {
+                  <tr>
+                    <td>
+                      <div class="font-medium" style="color: var(--text-primary)">
+                        {{ c.name }}
+                      </div>
+                    </td>
+                    <td class="font-mono text-xs">{{ c.cpf ?? '—' }}</td>
+                    <td>{{ c.email ?? '—' }}</td>
+                    <td>{{ c.phone ?? '—' }}</td>
+                    <td>
+                      <span
+                        class="badge"
+                        [class]="c.clientType === 'INDIVIDUAL' ? 'badge-blue' : 'badge-orange'"
+                      >
+                        {{ c.clientType === 'INDIVIDUAL' ? 'PF' : 'PJ' }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge" [class]="c.validCnh ? 'badge-green' : 'badge-red'">
+                        {{ c.validCnh ? 'Válida' : 'Sem CNH' }}
+                      </span>
+                    </td>
+                    <td>{{ fmtDate(c.registrationDate) }}</td>
+                    <td>
+                      <div class="flex gap-1.5">
+                        <button
+                          class="btn-edit"
+                          (click)="openEdit(c)"
+                          [attr.aria-label]="'Editar ' + c.name"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          class="btn-danger"
+                          (click)="delete(c)"
+                          [attr.aria-label]="'Excluir ' + c.name"
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+        <div
+          class="p-4 flex flex-wrap items-center justify-between gap-3"
+          style="border-top: 1px solid var(--surface-border)"
+        >
+          <span class="text-xs" style="color: var(--text-muted)"
+            >{{ totalElements }} cliente(s)</span
+          >
+          <app-pagination
+            [totalElements]="totalElements"
+            [pageSize]="12"
+            [currentPage]="page"
+            (pageChange)="load($event)"
+          />
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (activeTab === 'address') {
+    <div id="tab-address" role="tabpanel" class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="data-table" aria-label="Endereços de clientes">
+          <thead>
+            <tr>
+              <th>Rua</th>
+              <th>Nº</th>
+              <th>Bairro</th>
+              <th>Cidade</th>
+              <th>Estado</th>
+              <th>CEP</th>
+              <th><span class="sr-only">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (addresses.length === 0) {
+              <tr>
+                <td colspan="7" class="text-center py-10 text-sm" style="color: var(--text-muted)">
+                  Nenhum endereço cadastrado
+                </td>
+              </tr>
+            } @else {
+              @for (a of addresses; track a.id) {
+                <tr>
+                  <td>{{ a.street }}</td>
+                  <td>{{ a.number }}</td>
+                  <td>{{ a.district }}</td>
+                  <td>{{ a.city }}</td>
+                  <td>{{ a.state }}</td>
+                  <td class="font-mono text-xs">{{ a.cep ?? '—' }}</td>
+                  <td>
+                    <button
+                      class="btn-danger"
+                      (click)="deleteAddr(a)"
+                      aria-label="Excluir endereço"
+                    >
+                      Excluir
+                    </button>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <app-modal
+    [title]="editId ? 'Editar Cliente' : 'Novo Cliente'"
+    [open]="modalOpen"
+    (closeModal)="modalOpen = false"
+  >
+    <ng-container slot="body">
+      <form [formGroup]="form" class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="form-label" for="cust-name">Nome Completo *</label
+          ><input
+            id="cust-name"
+            class="form-input"
+            formControlName="name"
+            placeholder="Nome do cliente"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="cust-cpf">CPF *</label
+          ><input
+            id="cust-cpf"
+            class="form-input"
+            formControlName="cpf"
+            placeholder="000.000.000-00"
+            (input)="onCpf($event)"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="cust-email">Email *</label
+          ><input id="cust-email" type="email" class="form-input" formControlName="email" />
+        </div>
+        <div>
+          <label class="form-label" for="cust-phone">Telefone *</label
+          ><input
+            id="cust-phone"
+            class="form-input"
+            formControlName="phone"
+            placeholder="(00) 00000-0000"
+            (input)="onPhone($event)"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="cust-birth">Nascimento *</label
+          ><input id="cust-birth" type="date" class="form-input" formControlName="birthDate" />
+        </div>
+        <div>
+          <label class="form-label" for="cust-type">Tipo *</label>
+          <select id="cust-type" class="form-input" formControlName="clientType">
+            <option value="INDIVIDUAL">Pessoa Física</option>
+            <option value="CORPORATE">Pessoa Jurídica</option>
+            <option value="OTHERS">Outro</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-3 pt-4">
+          <input
+            type="checkbox"
+            id="cust-cnh"
+            formControlName="validCnh"
+            class="w-4 h-4 accent-orange-500"
+          />
+          <label for="cust-cnh" class="text-sm" style="color: var(--text-secondary)"
+            >CNH Válida</label
+          >
+        </div>
+      </form>
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="save()">Salvar</button>
+    </ng-container>
+  </app-modal>
+</div>
