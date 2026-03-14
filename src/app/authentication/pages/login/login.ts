@@ -47,19 +47,32 @@ export class Login {
       this.form.markAllAsTouched();
       return;
     }
+
     this.loading.set(true);
     this.error.set('');
 
     const { email, password } = this.form.value;
+
     this.auth.login({ email: email!, password: password! }).subscribe({
       next: () => {
         this.loading.set(false);
         this.router.navigate(['/']);
       },
-      error: () => {
-        // Demo mode - login anyway
+      error: (err) => {
         this.loading.set(false);
-        this.router.navigate(['/']);
+
+        const status = err?.status;
+
+        if (status === 401 || status === 403) {
+          this.error.set('E-mail ou senha inválidos.');
+        } else if (status === 0) {
+          this.error.set('Não foi possível conectar ao servidor. Verifique sua conexão.');
+        } else if (status >= 500) {
+          this.error.set('Erro interno no servidor. Tente novamente mais tarde.');
+        } else {
+          const msg = err?.error?.message ?? err?.message;
+          this.error.set(msg ?? 'Erro ao realizar login. Tente novamente.');
+        }
       },
     });
   }
