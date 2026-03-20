@@ -8,16 +8,10 @@ export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly BASE = 'http://localhost:8080/api';
 
-  /**
-   * GET Genérico para endpoints que não retornam páginas (ex: stats, DTOs simples)
-   */
   get<T>(path: string): Observable<T> {
     return this.http.get<T>(`${this.BASE}${path}`);
   }
 
-  /**
-   * Busca paginada profissional com suporte a ordenação
-   */
   getAll<T>(
     path: string,
     page = 0,
@@ -42,9 +36,6 @@ export class ApiService {
     return this.http.post<T>(`${this.BASE}${path}`, body);
   }
 
-  /**
-   * PATCH para atualizações parciais (mais performático e profissional que PUT)
-   */
   update<T>(path: string, id: string, body: unknown): Observable<T> {
     return this.http.patch<T>(`${this.BASE}${path}/${id}`, body);
   }
@@ -53,12 +44,23 @@ export class ApiService {
     return this.http.delete<void>(`${this.BASE}${path}/${id}`);
   }
 
-  /**
-   * Upload de arquivos com FormData
-   */
+  // ─── GESTÃO DE FICHEIROS (FILES) ──────────────────────────────────────────────
+
   uploadFile(file: File): Observable<unknown> {
     const fd = new FormData();
     fd.append('file', file);
     return this.http.post(`${this.BASE}/file/upload-file`, fd);
+  }
+
+  uploadMultipleFiles(files: File[]): Observable<unknown> {
+    const fd = new FormData();
+    files.forEach(file => fd.append('files', file)); 
+    return this.http.post(`${this.BASE}/file/upload-multiple-files`, fd);
+  }
+
+  downloadFile(fileName: string): Observable<Blob> {
+    return this.http.get(`${this.BASE}/file/download-file/${fileName}`, {
+      responseType: 'blob'
+    });
   }
 }
