@@ -1,5 +1,20 @@
 // ─── Pagination & HATEOAS ───────────────────────────────────────────────────
 
+export interface Link {
+  href: string;
+  hreflang?: string;
+  title?: string;
+  type?: string;
+  deprecation?: string;
+  profile?: string;
+  name?: string;
+  templated?: boolean;
+}
+
+export interface Links {
+  [key: string]: Link;
+}
+
 export interface PageMetadata {
   size: number;
   totalElements: number;
@@ -9,7 +24,7 @@ export interface PageMetadata {
 
 export interface HATEOASResponse<K extends string, T> {
   _embedded?: { [key in K]: T[] };
-  _links?: Record<string, { href: string }>;
+  _links?: Links;
   page?: PageMetadata;
 }
 
@@ -18,12 +33,24 @@ export interface PagedResponse<T> extends HATEOASResponse<string, T> {}
 
 // ─── Auth & Admin ────────────────────────────────────────────────────────────
 
-export interface LoginRequest { email: string; password: string; }
-export interface LoginResponse { token: TokenDTO; }
-export interface TokenDTO {
-  username: string;
-  accessToken: string;
+export interface LoginRequest { 
+  email?: string; 
+  password?: string; 
 }
+
+export interface LoginResponse { 
+  token?: TokenDTO;
+  _links?: Links;
+}
+
+export interface TokenDTO {
+  username?: string;
+  created?: string;
+  expiration?: string;
+  accessToken?: string;
+  _links?: Links;
+}
+
 export interface CurrentUser {
   email: string;
   name: string;
@@ -35,33 +62,42 @@ export interface Admin {
   name: string;
   email: string;
   phone?: string;
+  role?: string;
+  enabled?: boolean;
 }
 
 export interface AdminRegisterRequest extends Omit<Admin, 'id'> {
   password?: string;
 }
 
+export interface AdminResponseDTO extends Admin {
+  _links?: Links;
+}
+
 // ─── Dashboard ─────────────────────────────────────────────────────────────────
 
 export interface DashboardSummary {
-  totalVehicles:  number;
-  totalInventory: number;
-  totalSales:     number;
-  totalCustomers: number;
+  totalVehicles?: number;
+  totalInventory?: number;
+  totalSales?: number;
+  totalCustomers?: number;
 }
 
 // ─── Vehicle ─────────────────────────────────────────────────────────────────
 
-export type VehicleType = 'CAR'|'MOTORCYCLE'|'VAN'|'BUS'|'TRUCK'|'BOAT'|'OTHER_VEHICLE_TYPE';
-export type VehicleCategory = 'SUV'|'SEDAN'|'HATCHBACK'|'SPORTS'|'UTILITARIAN'|'COUPE'|'CONVERTIBLE'|'WAGON'|'PICKUP'|'VAN'|'MOTORHOME'|'ELECTRIC'|'HYBRID'|'OTHERS';
-export type FuelType = 'GASOLINE'|'DIESEL'|'ELECTRIC'|'HYBRID'|'ETHANOL'|'LPG'|'CNG'|'PROPANE'|'OTHERS';
-export type VehicleStatus = 'NEW'|'USED'|'SEMINOVO'|'OTHERS';
-export type VehicleAvailability = 'AVAILABLE'|'SOLD'|'PENDING'|'RESERVED'|'IN_NEGOTIATION'|'OTHERS';
+export type VehicleType = 'CAR' | 'MOTORCYCLE' | 'VAN' | 'BUS' | 'TRUCK' | 'BOAT' | 'OTHER_VEHICLE_TYPE';
+export type VehicleCategory = 'SUV' | 'SEDAN' | 'HATCHBACK' | 'SPORTS' | 'UTILITARIAN' | 'COUPE' | 'CONVERTIBLE' | 'WAGON' | 'PICKUP' | 'VAN' | 'MOTORHOME' | 'ELECTRIC' | 'HYBRID' | 'OTHERS';
+export type FuelType = 'GASOLINE' | 'DIESEL' | 'ELECTRIC' | 'HYBRID' | 'ETHANOL' | 'LPG' | 'CNG' | 'PROPANE' | 'OTHERS';
+export type TransmissionType = 'MANUAL' | 'AUTOMATIC' | 'SEMI_AUTOMATIC' | 'CVT' | 'DUAL_CLUTCH' | 'OTHERS';
+export type VehicleStatus = 'NEW' | 'USED' | 'SEMINOVO' | 'OTHERS';
+export type VehicleAvailability = 'AVAILABLE' | 'SOLD' | 'PENDING' | 'RESERVED' | 'IN_NEGOTIATION' | 'OTHERS';
 
 export interface VehicleImageFile {
   id?: string;
   name: string;
   downloadUri: string;
+  type?: string;
+  size?: number;
 }
 
 export interface VehicleSpecificDetail {
@@ -80,6 +116,7 @@ export interface Vehicle {
   mileage: number;
   weight: number;
   fuelType: FuelType;
+  transmissionType?: TransmissionType;
   numberOfCylinders: number;
   infotainmentSystem: string;
   fuelTankCapacity: number;
@@ -89,8 +126,17 @@ export interface Vehicle {
   status?: VehicleStatus;
   availability?: VehicleAvailability;
   description: string;
+  lastUpdate?: string;
   specificDetails?: VehicleSpecificDetail[];
   images?: VehicleImageFile[];
+}
+
+export interface VehicleResponseDTO extends Vehicle {
+  _links?: Links;
+}
+
+export interface VehicleSpecificDetailResponseDTO extends VehicleSpecificDetail {
+  _links?: Links;
 }
 
 // ─── Inventory ───────────────────────────────────────────────────────────────
@@ -107,9 +153,14 @@ export interface InventoryItem {
   vehicle: Partial<Vehicle>;
 }
 
+export interface InventoryItemResponseDTO extends Omit<InventoryItem, 'vehicle'> {
+  vehicle?: VehicleResponseDTO;
+  _links?: Links;
+}
+
 // ─── Customer ────────────────────────────────────────────────────────────────
 
-export type ClientType = 'INDIVIDUAL'|'CORPORATE'|'OTHERS';
+export type ClientType = 'INDIVIDUAL' | 'CORPORATE' | 'OTHERS';
 
 export interface Customer {
   id?: string;
@@ -118,8 +169,13 @@ export interface Customer {
   email: string;
   phone: string;
   birthDate: string;
+  registrationDate?: string;
   clientType: ClientType;
   validCnh: boolean;
+}
+
+export interface CustomerResponseDTO extends Customer {
+  _links?: Links;
 }
 
 export interface CustomerAddress {
@@ -131,6 +187,11 @@ export interface CustomerAddress {
   state: string;
   country: string;
   cep?: string;
+  complement?: string;
+}
+
+export interface CustomerAddressResponseDTO extends CustomerAddress {
+  _links?: Links;
 }
 
 // ─── Seller ──────────────────────────────────────────────────────────────────
@@ -143,10 +204,21 @@ export interface Seller {
   hireDate?: string;
   salary?: number;
   commissionRate?: number;
+  status?: string;
+  enabled?: boolean;
+  role?: string;
 }
 
 export interface SellerRegisterRequest extends Omit<Seller, 'id'> {
   password?: string;
+}
+
+export interface SellerResponseDTO {
+  id?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  _links?: Links;
 }
 
 // ─── Sale & Contract ─────────────────────────────────────────────────────────
@@ -156,15 +228,25 @@ export interface Sale {
   saleDate: string;
   grossAmount: number;
   netAmount?: number;
+  appliedDiscount?: number;
+  installmentsNumber?: number;
   paymentMethod: string;
   receipt: string;
+  invoice?: string;
   seller: Partial<Seller>;
   customer: Partial<Customer>;
   inventoryItem: Partial<InventoryItem>;
 }
 
-export type PaymentTerms = 'CASH'|'BANK_TRANSFER'|'CREDIT_CARD'|'DEBIT_CARD'|'PIX'|'CHECK'|'OTHER';
-export type ContractStatus = 'SIGNED'|'CANCELLED'|'EXPIRED'|'PENDING';
+export interface SaleResponseDTO extends Omit<Sale, 'seller' | 'customer' | 'inventoryItem'> {
+  seller?: SellerResponseDTO;
+  customer?: CustomerResponseDTO;
+  inventoryItem?: InventoryItemResponseDTO;
+  _links?: Links;
+}
+
+export type PaymentTerms = 'CASH' | 'BANK_TRANSFER' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'PIX' | 'CHECK' | 'INSTALLMENTS_WITHOUT_INTEREST' | 'INSTALLMENTS_WITH_INTEREST' | 'FINANCED_BY_BANK' | 'FINANCED_BY_DEALERSHIP' | 'TRADE_IN' | 'PARTIAL_CASH_PARTIAL_FINANCING' | 'OTHER';
+export type ContractStatus = 'SIGNED' | 'CANCELLED' | 'EXPIRED' | 'PENDING';
 
 export interface Contract {
   id?: string;
@@ -175,8 +257,14 @@ export interface Contract {
   totalAmount: number;
   paymentTerms: PaymentTerms;
   contractStatus?: ContractStatus;
+  notes?: string;
   attachments: string;
   sale: Partial<Sale>;
+}
+
+export interface ContractResponseDTO extends Omit<Contract, 'sale'> {
+  sale?: SaleResponseDTO;
+  _links?: Links;
 }
 
 // ─── Branch ──────────────────────────────────────────────────────────────────
@@ -193,6 +281,10 @@ export interface BranchAddress {
   complement?: string;
 }
 
+export interface BranchAddressResponseDTO extends BranchAddress {
+  _links?: Links;
+}
+
 export interface Branch {
   id?: string;
   name: string;
@@ -207,10 +299,15 @@ export interface Branch {
   address: BranchAddress;
 }
 
+export interface BranchResponseDTO extends Omit<Branch, 'address'> {
+  address?: BranchAddressResponseDTO;
+  _links?: Links;
+}
+
 // ─── Appointment ─────────────────────────────────────────────────────────────
 
-export type AppointmentType = 'TEST_DRIVE'|'NEGOTIATION_VISIT';
-export type AppointmentStatus = 'PENDING'|'COMPLETED'|'CANCELLED';
+export type AppointmentType = 'TEST_DRIVE' | 'NEGOTIATION_VISIT';
+export type AppointmentStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
 
 export interface Appointment {
   id?: string;
@@ -219,6 +316,22 @@ export interface Appointment {
   appointmentStatus?: AppointmentStatus;
   customer: Partial<Customer>;
   seller: Partial<Seller>;
+  inventoryItemCommitments?: any[];
+}
+
+export interface AppointmentResponseDTO extends Omit<Appointment, 'customer' | 'seller' | 'inventoryItemCommitments'> {
+  customer?: CustomerResponseDTO;
+  seller?: SellerResponseDTO;
+  inventoryItemCommitments?: InventoryItemResponseDTO[];
+  _links?: Links;
+}
+
+export interface AppointmentResponse {
+  _embedded?: {
+    appointmentResponseDTOList: AppointmentResponseDTO[];
+  };
+  _links?: Links;
+  page?: PageMetadata;
 }
 
 // ─── Nav ─────────────────────────────────────────────────────────────────────
@@ -230,8 +343,11 @@ export interface NavItem {
   section: string;
 }
 
-export interface AppointmentResponse {
-  _embedded?: {
-    appointmentResponseDTOList: any[];
-  };
+// ─── Upload / File ───────────────────────────────────────────────────────────
+
+export interface UploadFileResponseDTO {
+  fileName?: string;
+  fileDownloadUri?: string;
+  fileType?: string;
+  size?: number;
 }

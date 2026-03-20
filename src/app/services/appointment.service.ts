@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Appointment } from '../shared/interfaces/models.interface';
+import { Appointment, AppointmentResponse, AppointmentResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
 
 @Injectable({
@@ -9,19 +9,19 @@ export class AppointmentService {
   constructor(private api: ApiService) {}
 
   getAll(page = 0, size = 12, direction = 'asc') {
-    return this.api.getAll<Appointment>('/appointments', page, size, direction);
+    return this.api.getAll<AppointmentResponseDTO>('/appointments', page, size, direction);
   }
 
   getById(id: string) {
-    return this.api.getById<Appointment>('/appointments', id);
+    return this.api.getById<AppointmentResponseDTO>('/appointments', id);
   }
 
   create(a: Appointment) {
-    return this.api.create<Appointment>('/appointments', a);
+    return this.api.create<AppointmentResponseDTO>('/appointments', a);
   }
 
   update(id: string, a: Partial<Appointment>) {
-    return this.api.update<Appointment>('/appointments', id, a);
+    return this.api.update<AppointmentResponseDTO>('/appointments', id, a);
   }
 
   delete(id: string) {

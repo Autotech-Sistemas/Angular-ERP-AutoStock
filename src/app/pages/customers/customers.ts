@@ -1,13 +1,15 @@
 import { Component, OnInit, inject, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
-import { CustomerService } from '../../services/business.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CacheService } from '../../services/cache.service';
 import { formatDate, maskCpf, maskPhone } from '../../shared/helpers/formatters.helper';
 import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
 import { Pagination } from '../../shared/components/pagination/pagination';
+import { CustomerService } from '../../services/customer.service';
+import { CustomerAddressService } from '../../services/customer-address.service';
+import { CustomerResponseDTO, CustomerAddressResponseDTO, PagedResponse, Customer } from '../../shared/interfaces/models.interface';
 
 @Component({
   selector: 'app-customers',
@@ -17,18 +19,21 @@ import { Pagination } from '../../shared/components/pagination/pagination';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Customers implements OnInit {
-  private svc   = inject(CustomerService);
-  private toast = inject(ToastService);
-  private cache = inject(CacheService);
-  private fb    = inject(FormBuilder);
-  private cdr   = inject(ChangeDetectorRef);
+  private svc     = inject(CustomerService);
+  private addrSvc = inject(CustomerAddressService);
+  private toast   = inject(ToastService);
+  private cache   = inject(CacheService);
+  private fb      = inject(FormBuilder);
+  private cdr     = inject(ChangeDetectorRef);
 
   loading       = false;
   modalOpen     = false;
   activeTab     = 'list';
-  items:     any[] = [];
-  filtered:  any[] = [];
-  addresses: any[] = [];
+  
+  items:     CustomerResponseDTO[]        = [];
+  filtered:  CustomerResponseDTO[]        = [];
+  addresses: CustomerAddressResponseDTO[] = [];
+  
   editId        = '';
   searchQuery   = '';
   page          = 0;
@@ -57,10 +62,10 @@ export class Customers implements OnInit {
     const key = this.cacheKey(page);
 
     if (!forceRefresh && this.cache.has(key)) {
-      const cached = this.cache.get<{ items: any[]; total: number }>(key)!;
+      const cached = this.cache.get<{ items: CustomerResponseDTO[]; total: number }>(key)!;
       this.items         = cached.items;
       this.totalElements = cached.total;
-      // Atualiza também o cache compartilhado customers_all
+      
       if (!this.cache.has('customers_all')) {
         this.cache.set('customers_all', this.items);
       }
@@ -73,12 +78,14 @@ export class Customers implements OnInit {
     this.cdr.markForCheck();
 
     this.svc.getAll(page).subscribe({
-      next: (r) => {
-        this.items         = (r as any)?._embedded?.customerResponseDTOList ?? [];
-        this.totalElements = (r as any)?.page?.totalElements ?? 0;
+      next: (response) => {
+        const r = response as unknown as PagedResponse<CustomerResponseDTO>;
+        this.items         = r._embedded?.['customerResponseDTOList'] ?? [];
+        this.totalElements = r.page?.totalElements ?? 0;
+        
         this.cache.set(key, { items: this.items, total: this.totalElements });
-        // Atualiza cache compartilhado usado pelos selects de vendas/agendamentos
         this.cache.set('customers_all', this.items);
+        
         this.applyFilter();
         this.loading = false;
         this.cdr.markForCheck();
@@ -98,13 +105,16 @@ export class Customers implements OnInit {
 
   loadAddresses(forceRefresh = false): void {
     const key = 'customers_addresses';
+    
     if (!forceRefresh && this.cache.has(key)) {
-      this.addresses = this.cache.get<any[]>(key)!;
+      this.addresses = this.cache.get<CustomerAddressResponseDTO[]>(key)!;
       this.cdr.markForCheck();
       return;
     }
-    this.svc.getAddresses().subscribe((r) => {
-      this.addresses = (r as any)?._embedded?.customerAddressResponseDTOList ?? [];
+    
+    this.addrSvc.getAll(0, 50).subscribe((response) => {
+      const r = response as unknown as PagedResponse<CustomerAddressResponseDTO>;
+      this.addresses = r._embedded?.['customerAddressResponseDTOList'] ?? [];
       this.cache.set(key, this.addresses);
       this.cdr.markForCheck();
     });
@@ -143,8 +153,8 @@ export class Customers implements OnInit {
     this.cdr.markForCheck();
   }
 
-  openEdit(c: any): void {
-    this.editId = c.id;
+  openEdit(c: CustomerResponseDTO): void {
+    this.editId = c.id!;
     this.form.patchValue({ ...c });
     this.modalOpen = true;
     this.cdr.markForCheck();
@@ -158,10 +168,12 @@ export class Customers implements OnInit {
 
   save(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    const body = this.form.value;
+    
+    const body = this.form.value as Partial<Customer>;
+    
     const req  = this.editId
-      ? this.svc.update(this.editId, body as any)
-      : this.svc.create(body as any);
+      ? this.svc.update(this.editId, body)
+      : this.svc.create(body as Customer);
 
     req.subscribe({
       next: () => {
@@ -178,14 +190,15 @@ export class Customers implements OnInit {
     });
   }
 
-  async delete(c: any): Promise<void> {
+  async delete(c: CustomerResponseDTO): Promise<void> {
     const r = await Swal.fire({
       title: `Excluir ${c.name}?`, icon: 'warning',
       showCancelButton: true, confirmButtonText: 'Sim',
       cancelButtonText: 'Não', confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
-    this.svc.delete(c.id).subscribe({
+    
+    this.svc.delete(c.id!).subscribe({
       next: () => {
         this.toast.success('Cliente excluído!');
         this.invalidateAllPages();
@@ -195,14 +208,15 @@ export class Customers implements OnInit {
     });
   }
 
-  async deleteAddr(a: any): Promise<void> {
+  async deleteAddr(a: CustomerAddressResponseDTO): Promise<void> {
     const r = await Swal.fire({
       title: 'Excluir endereço?', icon: 'warning',
       showCancelButton: true, confirmButtonText: 'Sim',
       cancelButtonText: 'Não', confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
-    this.svc.deleteAddress(a.id).subscribe({
+    
+    this.addrSvc.delete(a.id!).subscribe({
       next: () => {
         this.toast.success('Endereço removido!');
         this.cache.invalidate('customers_addresses');

@@ -1,12 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import {
-  SaleService,
-  CustomerService,
-  SellerService,
-  InventoryService,
-} from '../../services/business.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CacheService } from '../../services/cache.service';
 import { formatCurrency, formatDate } from '../../shared/helpers/formatters.helper';
@@ -14,6 +8,10 @@ import { forkJoin, catchError, of } from 'rxjs';
 import Swal from 'sweetalert2';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { Modal } from '../../shared/components/modal/modal';
+import { CustomerService } from '../../services/customer.service';
+import { InventoryService } from '../../services/inventory.service';
+import { SaleService } from '../../services/sale.service';
+import { SellerService } from '../../services/seller.service';
 
 @Component({
   selector: 'app-sales',

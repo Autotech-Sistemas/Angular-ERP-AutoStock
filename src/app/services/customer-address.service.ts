@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CustomerAddress } from '../shared/interfaces/models.interface';
+import { CustomerAddress, CustomerAddressResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
 
 @Injectable({
@@ -9,19 +9,19 @@ export class CustomerAddressService {
   constructor(private api: ApiService) {}
 
   getAll(page = 0, size = 12, direction = 'asc') {
-    return this.api.getAll<CustomerAddress>('/customers-address', page, size, direction);
+    return this.api.getAll<CustomerAddressResponseDTO>('/customers-address', page, size, direction);
   }
 
   getById(id: string) {
-    return this.api.getById<CustomerAddress>('/customers-address', id);
+    return this.api.getById<CustomerAddressResponseDTO>('/customers-address', id);
   }
 
   create(c: CustomerAddress) {
-    return this.api.create<CustomerAddress>('/customers-address', c);
+    return this.api.create<CustomerAddressResponseDTO>('/customers-address', c);
   }
 
   update(id: string, c: Partial<CustomerAddress>) {
-    return this.api.update<CustomerAddress>('/customers-address', id, c);
+    return this.api.update<CustomerAddressResponseDTO>('/customers-address', id, c);
   }
 
   delete(id: string) {

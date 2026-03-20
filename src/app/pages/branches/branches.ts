@@ -1,56 +1,88 @@
-import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { CommonModule, formatDate } from '@angular/common';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
-import { BranchService } from '../../services/business.service';
 import { CacheService } from '../../services/cache.service';
 import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
+import { CustomerService } from '../../services/customer.service';
+import { maskCpf, maskPhone } from '../../shared/helpers/formatters.helper';
+import {
+  CustomerResponseDTO,
+  CustomerAddressResponseDTO,
+  PagedResponse,
+  Customer,
+} from '../../shared/interfaces/models.interface';
+import { Pagination } from '../../shared/components/pagination/pagination';
+import { CustomerAddressService } from '../../services/customer-address.service';
 
 @Component({
   selector: 'app-branches',
-  imports: [CommonModule, ReactiveFormsModule, Modal],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Modal, Pagination],
   templateUrl: './branches.html',
   styleUrl: './branches.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Branches implements OnInit {
-  private svc   = inject(BranchService);
+  private svc = inject(CustomerService);
+  private addrSvc = inject(CustomerAddressService);
   private toast = inject(ToastService);
   private cache = inject(CacheService);
-  private fb    = inject(FormBuilder);
-  private cdr   = inject(ChangeDetectorRef);
+  private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
-  loading   = false;
+  loading = false;
   modalOpen = false;
-  items:    any[] = [];
-  editId    = '';
+  activeTab = 'list';
 
-  private readonly CACHE_KEY = 'branches';
+  items: CustomerResponseDTO[] = [];
+  filtered: CustomerResponseDTO[] = [];
+  addresses: CustomerAddressResponseDTO[] = [];
+
+  editId = '';
+  searchQuery = '';
+  page = 0;
+  totalElements = 0;
+
+  fmtDate = formatDate;
 
   form = this.fb.group({
-    name:         ['', Validators.required],
-    email:        ['', Validators.required],
-    phoneNumber:  [''],
-    managerName:  ['', Validators.required],
-    openingHours: ['', Validators.required],
-    branchType:   ['', Validators.required],
-    status:       ['Ativo'],
-    street:       ['', Validators.required],
-    number:       [0, Validators.required],
-    district:     ['', Validators.required],
-    city:         ['', Validators.required],
-    state:        ['', Validators.required],
-    country:      ['BRASIL', Validators.required],
-    cep:          [''],
-    complement:   [''],
+    name: ['', Validators.required],
+    cpf: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    phone: ['', Validators.required],
+    birthDate: ['', Validators.required],
+    clientType: ['INDIVIDUAL', Validators.required],
+    validCnh: [false],
   });
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.load();
+  }
 
-  load(forceRefresh = false): void {
-    if (!forceRefresh && this.cache.has(this.CACHE_KEY)) {
-      this.items = this.cache.get<any[]>(this.CACHE_KEY)!;
+  private cacheKey(page: number): string {
+    return `customers_page_${page}`;
+  }
+
+  load(page = 0, forceRefresh = false): void {
+    this.page = page;
+    const key = this.cacheKey(page);
+
+    if (!forceRefresh && this.cache.has(key)) {
+      const cached = this.cache.get<{ items: CustomerResponseDTO[]; total: number }>(key)!;
+      this.items = cached.items;
+      this.totalElements = cached.total;
+
+      if (!this.cache.has('customers_all')) {
+        this.cache.set('customers_all', this.items);
+      }
+      this.applyFilter();
       this.cdr.markForCheck();
       return;
     }
@@ -58,11 +90,16 @@ export class Branches implements OnInit {
     this.loading = true;
     this.cdr.markForCheck();
 
-    this.svc.getAll().subscribe({
-      next: (r) => {
-        const raw  = r as any;
-        this.items = raw?._embedded?.branchResponseDTOList ?? (Array.isArray(raw) ? raw : []);
-        this.cache.set(this.CACHE_KEY, this.items);
+    this.svc.getAll(page).subscribe({
+      next: (response) => {
+        const r = response as unknown as PagedResponse<CustomerResponseDTO>;
+        this.items = r._embedded?.['customerResponseDTOList'] ?? [];
+        this.totalElements = r.page?.totalElements ?? 0;
+
+        this.cache.set(key, { items: this.items, total: this.totalElements });
+        this.cache.set('customers_all', this.items);
+
+        this.applyFilter();
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -74,63 +111,91 @@ export class Branches implements OnInit {
   }
 
   refresh(): void {
-    this.cache.invalidate(this.CACHE_KEY);
-    this.load(true);
+    this.cache.invalidate(this.cacheKey(this.page));
+    this.cache.invalidate('customers_all');
+    this.load(this.page, true);
   }
 
-  openNew(): void {
-    this.editId = '';
-    this.form.reset({ country: 'BRASIL', status: 'Ativo', number: 0 });
-    this.modalOpen = true;
-    this.cdr.markForCheck();
-  }
+  loadAddresses(forceRefresh = false): void {
+    const key = 'customers_addresses';
 
-  openEdit(id: string): void {
-    // Tenta carregar do cache primeiro
-    const cached = this.cache.get<any[]>(this.CACHE_KEY);
-    const branch = cached?.find(b => b.id === id);
-
-    if (branch) {
-      this.editId = id;
-      this.form.patchValue({ ...branch, ...branch.address } as any);
-      this.modalOpen = true;
+    if (!forceRefresh && this.cache.has(key)) {
+      this.addresses = this.cache.get<CustomerAddressResponseDTO[]>(key)!;
       this.cdr.markForCheck();
       return;
     }
 
-    // Fallback: busca da API
-    this.svc.getById(id).subscribe((b) => {
-      this.editId = id;
-      this.form.patchValue({ ...b, ...b.address } as any);
-      this.modalOpen = true;
+    this.addrSvc.getAll(0, 50).subscribe((response) => {
+      const r = response as unknown as PagedResponse<CustomerAddressResponseDTO>;
+      this.addresses = r._embedded?.['customerAddressResponseDTOList'] ?? [];
+      this.cache.set(key, this.addresses);
       this.cdr.markForCheck();
     });
   }
 
+  applyFilter(): void {
+    const q = this.searchQuery.toLowerCase();
+    this.filtered = !q
+      ? [...this.items]
+      : this.items.filter((c) => `${c.name} ${c.cpf} ${c.email}`.toLowerCase().includes(q));
+  }
+
+  onSearch(): void {
+    this.applyFilter();
+    this.cdr.markForCheck();
+  }
+
+  onCpf(e: Event): void {
+    const t = e.target as HTMLInputElement;
+    t.value = maskCpf(t.value);
+    this.form.patchValue({ cpf: t.value });
+  }
+
+  onPhone(e: Event): void {
+    const t = e.target as HTMLInputElement;
+    t.value = maskPhone(t.value);
+    this.form.patchValue({ phone: t.value });
+  }
+
+  openNew(): void {
+    this.editId = '';
+    this.form.reset({ clientType: 'INDIVIDUAL', validCnh: false });
+    this.modalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  openEdit(c: CustomerResponseDTO): void {
+    this.editId = c.id!;
+    this.form.patchValue({ ...c });
+    this.modalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  switchTab(tab: string): void {
+    this.activeTab = tab;
+    if (tab === 'address') this.loadAddresses();
+    this.cdr.markForCheck();
+  }
+
   save(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    const v    = this.form.value;
-    const body = {
-      name: v.name, email: v.email, phoneNumber: v.phoneNumber,
-      managerName: v.managerName, openingHours: v.openingHours,
-      branchType: v.branchType, status: v.status,
-      address: {
-        street: v.street, number: v.number, district: v.district,
-        city: v.city, state: v.state, country: v.country,
-        cep: v.cep, complement: v.complement,
-      },
-    };
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const body = this.form.value as Partial<Customer>;
+
     const req = this.editId
-      ? this.svc.update(this.editId, body as any)
-      : this.svc.create(body as any);
+      ? this.svc.update(this.editId, body)
+      : this.svc.create(body as Customer);
 
     req.subscribe({
       next: () => {
-        this.toast.success(this.editId ? 'Filial atualizada!' : 'Filial cadastrada!');
+        this.toast.success(this.editId ? 'Cliente atualizado!' : 'Cliente cadastrado!');
         this.modalOpen = false;
-        this.editId    = '';
-        this.cache.invalidate(this.CACHE_KEY);
-        this.load(true);
+        this.editId = '';
+        this.invalidateAllPages();
+        this.load(this.page, true);
       },
       error: (e) => {
         this.toast.error(e?.message ?? 'Erro');
@@ -139,20 +204,52 @@ export class Branches implements OnInit {
     });
   }
 
-  async delete(b: any): Promise<void> {
+  async delete(c: CustomerResponseDTO): Promise<void> {
     const r = await Swal.fire({
-      title: `Excluir ${b.name}?`, icon: 'warning',
-      showCancelButton: true, confirmButtonText: 'Sim',
-      cancelButtonText: 'Não', confirmButtonColor: '#dc2626',
+      title: `Excluir ${c.name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim',
+      cancelButtonText: 'Não',
+      confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
-    this.svc.delete(b.id).subscribe({
+
+    this.svc.delete(c.id!).subscribe({
       next: () => {
-        this.toast.success('Filial excluída!');
-        this.cache.invalidate(this.CACHE_KEY);
-        this.load(true);
+        this.toast.success('Cliente excluído!');
+        this.invalidateAllPages();
+        this.load(this.page, true);
       },
       error: (e) => this.toast.error(e?.message ?? 'Erro'),
     });
+  }
+
+  async deleteAddr(a: CustomerAddressResponseDTO): Promise<void> {
+    const r = await Swal.fire({
+      title: 'Excluir endereço?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim',
+      cancelButtonText: 'Não',
+      confirmButtonColor: '#dc2626',
+    });
+    if (!r.isConfirmed) return;
+
+    this.addrSvc.delete(a.id!).subscribe({
+      next: () => {
+        this.toast.success('Endereço removido!');
+        this.cache.invalidate('customers_addresses');
+        this.loadAddresses(true);
+      },
+      error: (e) => this.toast.error(e?.message ?? 'Erro'),
+    });
+  }
+
+  private invalidateAllPages(): void {
+    for (let i = 0; i <= Math.ceil(this.totalElements / 12); i++) {
+      this.cache.invalidate(this.cacheKey(i));
+    }
+    this.cache.invalidate('customers_all');
   }
 }

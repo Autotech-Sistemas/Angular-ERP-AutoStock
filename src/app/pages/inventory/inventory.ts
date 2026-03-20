@@ -1,13 +1,21 @@
 import { Component, OnInit, inject, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormsModule } from '@angular/forms';
-import { InventoryService, VehicleService } from '../../services/business.service';
+import { InventoryService } from '../../services/inventory.service';
+import { VehicleService } from '../../services/vehicle.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CacheService } from '../../services/cache.service';
 import { formatCurrency, formatDate } from '../../shared/helpers/formatters.helper';
 import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
 import { Pagination } from '../../shared/components/pagination/pagination';
+// 1. Importando todas as tipagens necessárias do seu models.interface
+import { 
+  VehicleResponseDTO, 
+  InventoryItemResponseDTO, 
+  InventoryItem, 
+  PagedResponse 
+} from '../../shared/interfaces/models.interface';
 
 @Component({
   selector: 'app-inventory',
@@ -26,9 +34,12 @@ export class Inventory implements OnInit {
 
   loading       = false;
   modalOpen     = false;
-  items:    any[] = [];
-  filtered: any[] = [];
-  vehicles: any[] = [];
+  
+  // 2. Tipando as listas (Substituindo any[])
+  items:    InventoryItemResponseDTO[] = [];
+  filtered: InventoryItemResponseDTO[] = [];
+  vehicles: VehicleResponseDTO[]       = [];
+  
   page          = 0;
   totalElements = 0;
   searchQuery   = '';
@@ -37,7 +48,8 @@ export class Inventory implements OnInit {
   fmtCurrency = formatCurrency;
   fmtDate     = formatDate;
 
-  calcSalePrice = (i: any) => {
+  // 3. Tipando o parâmetro da função
+  calcSalePrice = (i: InventoryItemResponseDTO) => {
     const acq = i.acquisitionPrice ?? 0;
     const m   = i.profitMargin ?? 0;
     return m > 0 ? formatCurrency(acq * (1 + m / 100)) : '—';
@@ -68,7 +80,8 @@ export class Inventory implements OnInit {
     const key = this.cacheKey(page);
 
     if (!forceRefresh && this.cache.has(key)) {
-      const cached = this.cache.get<{ items: any[]; total: number }>(key)!;
+      // 4. Tipando o retorno do cache corretamente
+      const cached = this.cache.get<{ items: InventoryItemResponseDTO[]; total: number }>(key)!;
       this.items         = cached.items;
       this.totalElements = cached.total;
       this.applyFilter();
@@ -79,10 +92,13 @@ export class Inventory implements OnInit {
     this.loading = true;
     this.cdr.markForCheck();
 
+    // 5. Removendo o cast de (r as any)
     this.svc.getAll(page).subscribe({
-      next: (r) => {
-        this.items         = (r as any)?._embedded?.inventoryItemResponseDTOList ?? [];
-        this.totalElements = (r as any)?.page?.totalElements ?? 0;
+      next: (r: PagedResponse<InventoryItemResponseDTO>) => {
+        // Acessando a chave do HATEOAS usando a notação de colchetes
+        this.items         = r._embedded?.['inventoryItemResponseDTOList'] ?? [];
+        this.totalElements = r.page?.totalElements ?? 0;
+        
         this.cache.set(key, { items: this.items, total: this.totalElements });
         this.applyFilter();
         this.loading = false;
@@ -102,13 +118,17 @@ export class Inventory implements OnInit {
 
   loadVehicles(): void {
     const key = 'vehicles_all';
+    
     if (this.cache.has(key)) {
-      this.vehicles = this.cache.get<any[]>(key)!;
+      this.vehicles = this.cache.get<VehicleResponseDTO[]>(key)!;
       this.cdr.markForCheck();
       return;
     }
-    this.vehSvc.getAll(0, 200).subscribe((r) => {
-      this.vehicles = (r as any)?._embedded?.vehicleResponseDTOList ?? [];
+
+    // Usando PagedResponse diretamente
+    this.vehSvc.getAll(0, 200).subscribe((r: PagedResponse<VehicleResponseDTO>) => {
+      this.vehicles = r._embedded?.['vehicleResponseDTOList'] ?? [];
+      
       this.cache.set(key, this.vehicles);
       this.cdr.markForCheck();
     });
@@ -148,18 +168,22 @@ export class Inventory implements OnInit {
   }
 
   save(): void {
-    const v    = this.form.value;
-    const body = {
-      vehicle:          { id: v.vehicleId },
-      licensePlate:     v.licensePlate,
-      chassis:          v.chassis,
-      supplier:         v.supplier,
-      acquisitionPrice: v.acquisitionPrice,
-      profitMargin:     v.profitMargin,
-      stockEntryDate:   v.stockEntryDate || null,
-      stockExitDate:    v.stockExitDate  || null,
+    const v = this.form.value;
+    
+    // 6. Construindo o DTO de Input e garantindo a compatibilidade de tipos
+    const body: InventoryItem = {
+      vehicle:          { id: v.vehicleId ?? undefined }, // Referência parcial do veículo
+      licensePlate:     v.licensePlate ?? undefined,
+      chassis:          v.chassis ?? undefined,
+      supplier:         v.supplier ?? undefined,
+      acquisitionPrice: v.acquisitionPrice ?? 0,
+      profitMargin:     v.profitMargin ?? 0,
+      stockEntryDate:   v.stockEntryDate || undefined,
+      stockExitDate:    v.stockExitDate || undefined,
     };
-    this.svc.create(body as any).subscribe({
+
+    // Removido o (body as any)
+    this.svc.create(body).subscribe({
       next: () => {
         this.toast.success('Item adicionado!');
         this.modalOpen = false;
@@ -173,14 +197,17 @@ export class Inventory implements OnInit {
     });
   }
 
-  async delete(i: any): Promise<void> {
+  // 7. Tipando a função de apagar (substituindo o any)
+  async delete(i: InventoryItemResponseDTO): Promise<void> {
     const r = await Swal.fire({
       title: 'Remover do estoque?', icon: 'warning',
       showCancelButton: true, confirmButtonText: 'Sim',
       cancelButtonText: 'Não', confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
-    this.svc.delete(i.id).subscribe({
+    
+    // Passando o ID garantido com non-null assertion (!) pois sabemos que DTOs que vêm do back sempre têm ID
+    this.svc.delete(i.id!).subscribe({
       next: () => {
         this.toast.success('Removido!');
         this.invalidateAllPages();

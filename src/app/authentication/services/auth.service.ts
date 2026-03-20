@@ -1,25 +1,22 @@
-import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
+import { ApiService } from '../../services/api.service';
 import { LoginRequest, LoginResponse, CurrentUser } from '../../shared/interfaces/models.interface';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly API = 'http://localhost:8080/api';
+  private api = inject(ApiService);
+  private router = inject(Router);
+
   private readonly TOKEN = 'as_token';
   private readonly USER = 'as_user';
 
   currentUser = signal<CurrentUser | null>(this.loadUser());
   isLoggedIn = signal<boolean>(!!this.loadToken());
 
-  constructor(
-    private http: HttpClient,
-    private router: Router,
-  ) {}
-
   login(req: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.API}/auth/login`, req).pipe(
+    return this.api.create<LoginResponse>('/auth/login', req).pipe(
       tap((res) => {
         const token = res?.token?.accessToken;
         if (!token) throw new Error('Token não recebido');

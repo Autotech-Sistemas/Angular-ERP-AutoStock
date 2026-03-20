@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Seller, SellerRegisterRequest } from '../shared/interfaces/models.interface';
+import { Seller, SellerRegisterRequest, SellerResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
 
 @Injectable({
@@ -9,19 +9,19 @@ export class SellerService {
   constructor(private api: ApiService) {}
 
   getAll(page = 0, size = 12, direction = 'asc') {
-    return this.api.getAll<Seller>('/sellers', page, size, direction);
+    return this.api.getAll<SellerResponseDTO>('/sellers', page, size, direction);
   }
 
   getById(id: string) {
-    return this.api.getById<Seller>('/sellers', id);
+    return this.api.getById<SellerResponseDTO>('/sellers', id);
   }
 
   create(s: SellerRegisterRequest) {
-    return this.api.create<Seller>('/sellers', s);
+    return this.api.create<SellerResponseDTO>('/sellers', s);
   }
 
   update(id: string, s: Partial<Seller>) {
-    return this.api.update<Seller>('/sellers', id, s);
+    return this.api.update<SellerResponseDTO>('/sellers', id, s);
   }
 
   delete(id: string) {

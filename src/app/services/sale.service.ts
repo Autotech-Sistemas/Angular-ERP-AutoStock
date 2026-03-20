@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Sale } from '../shared/interfaces/models.interface';
+import { Sale, SaleResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
 
 @Injectable({
@@ -9,19 +9,19 @@ export class SaleService {
   constructor(private api: ApiService) {}
 
   getAll(page = 0, size = 12, direction = 'asc') {
-    return this.api.getAll<Sale>('/sales', page, size, direction);
+    return this.api.getAll<SaleResponseDTO>('/sales', page, size, direction);
   }
 
   getById(id: string) {
-    return this.api.getById<Sale>('/sales', id);
+    return this.api.getById<SaleResponseDTO>('/sales', id);
   }
 
   create(s: Sale) {
-    return this.api.create<Sale>('/sales', s);
+    return this.api.create<SaleResponseDTO>('/sales', s);
   }
 
   update(id: string, s: Partial<Sale>) {
-    return this.api.update<Sale>('/sales', id, s);
+    return this.api.update<SaleResponseDTO>('/sales', id, s);
   }
 
   delete(id: string) {

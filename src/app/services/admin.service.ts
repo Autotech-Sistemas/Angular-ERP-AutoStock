@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { Admin, AdminRegisterRequest } from '../shared/interfaces/models.interface';
+import { Admin, AdminRegisterRequest, AdminResponseDTO } from '../shared/interfaces/models.interface';
 
 @Injectable({
   providedIn: 'root',
@@ -8,19 +8,19 @@ import { Admin, AdminRegisterRequest } from '../shared/interfaces/models.interfa
 export class AdminService {
   constructor(private api: ApiService) {}
   getAll() {
-    return this.api.getAll<Admin>('/adm');
+    return this.api.getAll<AdminResponseDTO>('/adm');
   }
 
   getById(id: string) {
-    return this.api.getById<Admin>('/adm', id);
+    return this.api.getById<AdminResponseDTO>('/adm', id);
   }
 
   create(a: AdminRegisterRequest) {
-    return this.api.create<Admin>('/adm', a);
+    return this.api.create<AdminResponseDTO>('/adm', a);
   }
 
   update(id: string, a: Partial<Admin>) {
-    return this.api.update<Admin>('/adm', id, a);
+    return this.api.update<AdminResponseDTO>('/adm', id, a);
   }
 
   delete(id: string) {
