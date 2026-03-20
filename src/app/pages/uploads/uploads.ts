@@ -20,7 +20,7 @@ export class Uploads {
   private api = inject(ApiService);
   private toast = inject(ToastService);
 
-  readonly apiBase = 'http://localhost:8889/api';
+  readonly apiBase = 'http://localhost:8080/api';
 
   selectedFiles = signal<File[]>([]);
   uploadedFiles = signal<UploadedFile[]>([]);

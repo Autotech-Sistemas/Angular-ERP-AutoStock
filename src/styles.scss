@@ -436,9 +436,7 @@ h6 {
     @apply p-6;
     animation: pageEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     height: 100vh;
-    display: flex;
-	flex-wrap: wrap;
-	flex-direction: column;
+    display: block;
     width: 100%;
   }
 

@@ -6,7 +6,7 @@ import { PagedResponse } from '../shared/interfaces/models.interface';
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
-  private readonly BASE = 'http://localhost:8889/api';
+  private readonly BASE = 'http://localhost:8080/api';
 
   /**
    * GET Genérico para endpoints que não retornam páginas (ex: stats, DTOs simples)

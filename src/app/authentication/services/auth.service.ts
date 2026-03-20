@@ -6,7 +6,7 @@ import { LoginRequest, LoginResponse, CurrentUser } from '../../shared/interface
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly API = 'http://localhost:8889/api';
+  private readonly API = 'http://localhost:8080/api';
   private readonly TOKEN = 'as_token';
   private readonly USER = 'as_user';
 

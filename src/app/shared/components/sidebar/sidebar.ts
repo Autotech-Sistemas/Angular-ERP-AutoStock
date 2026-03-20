@@ -228,7 +228,7 @@ export class Sidebar implements OnInit, OnDestroy {
 
   private startApiPing(): void {
     this.pingSub = timer(0, 30000).subscribe(() => {
-      this.http.get('http://localhost:8889/api/actuator/health', { responseType: 'text' })
+      this.http.get('http://localhost:8080/api/actuator/health', { responseType: 'text' })
         .pipe(map(() => 'online' as const), catchError(() => of('offline' as const)))
         .subscribe(s => { this.apiStatus.set(s); this.cdr.markForCheck(); });
     });
