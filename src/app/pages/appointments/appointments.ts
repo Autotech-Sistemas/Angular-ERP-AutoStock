@@ -3,12 +3,23 @@ import { Component, inject, OnInit, ChangeDetectorRef, ChangeDetectionStrategy }
 import { ReactiveFormsModule, FormsModule, FormBuilder, Validators } from '@angular/forms';
 import { catchError, of } from 'rxjs';
 import { ToastService } from '../../core/services/toast.service';
-import { AppointmentService, CustomerService, SellerService } from '../../services/business.service';
 import { CacheService } from '../../services/cache.service';
 import { formatDate, aptTypeClass, aptTypeLabel, aptStatusClass, aptStatusLabel } from '../../shared/helpers/formatters.helper';
 import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
 import { Pagination } from '../../shared/components/pagination/pagination';
+import {
+  AppointmentResponseDTO,
+  CustomerResponseDTO,
+  SellerResponseDTO,
+  PagedResponse,
+  Appointment,
+  AppointmentType,
+  AppointmentStatus
+} from '../../shared/interfaces/models.interface';
+import { AppointmentService } from '../../services/appointment.service';
+import { CustomerService } from '../../services/customer.service';
+import { SellerService } from '../../services/seller.service';
 
 @Component({
   selector: 'app-appointments',
@@ -28,9 +39,9 @@ export class Appointments implements OnInit {
 
   loading       = false;
   modalOpen     = false;
-  items:     any[] = [];
-  customers: any[] = [];
-  sellers:   any[] = [];
+  items:        AppointmentResponseDTO[] = [];
+  customers:    CustomerResponseDTO[]    = [];
+  sellers:      SellerResponseDTO[]      = [];
   page          = 0;
   totalElements = 0;
 
@@ -59,7 +70,7 @@ export class Appointments implements OnInit {
     const key = this.cacheKey(page);
 
     if (!forceRefresh && this.cache.has(key)) {
-      const cached = this.cache.get<{ items: any[]; total: number }>(key)!;
+      const cached = this.cache.get<{ items: AppointmentResponseDTO[]; total: number }>(key)!;
       this.items         = cached.items;
       this.totalElements = cached.total;
       this.cdr.markForCheck();
@@ -70,9 +81,10 @@ export class Appointments implements OnInit {
     this.cdr.markForCheck();
 
     this.svc.getAll(page).subscribe({
-      next: (r) => {
-        this.items         = (r as any)?._embedded?.appointmentResponseDTOList ?? [];
-        this.totalElements = (r as any)?.page?.totalElements ?? 0;
+      next: (response) => {
+        const r = response as unknown as PagedResponse<AppointmentResponseDTO>;
+        this.items         = r._embedded?.['appointmentResponseDTOList'] ?? [];
+        this.totalElements = r.page?.totalElements ?? 0;
         this.cache.set(key, { items: this.items, total: this.totalElements });
         this.loading = false;
         this.cdr.markForCheck();
@@ -90,26 +102,31 @@ export class Appointments implements OnInit {
   }
 
   openNew(): void {
-    // Reutiliza caches compartilhados de clientes e vendedores
     const custKey = 'customers_all';
     const selKey  = 'sellers_all';
 
     if (this.cache.has(custKey)) {
-      this.customers = this.cache.get<any[]>(custKey)!;
+      this.customers = this.cache.get<CustomerResponseDTO[]>(custKey)!;
     } else {
-      this.custSvc.getAll(0, 200).pipe(catchError(() => of(null))).subscribe(r => {
-        this.customers = (r as any)?._embedded?.customerResponseDTOList ?? [];
-        this.cache.set(custKey, this.customers);
+      this.custSvc.getAll(0, 200).pipe(catchError(() => of(null))).subscribe(response => {
+        if (response) {
+          const r = response as unknown as PagedResponse<CustomerResponseDTO>;
+          this.customers = r._embedded?.['customerResponseDTOList'] ?? [];
+          this.cache.set(custKey, this.customers);
+        }
         this.cdr.markForCheck();
       });
     }
 
     if (this.cache.has(selKey)) {
-      this.sellers = this.cache.get<any[]>(selKey)!;
+      this.sellers = this.cache.get<SellerResponseDTO[]>(selKey)!;
     } else {
-      this.selSvc.getAll(0, 200).pipe(catchError(() => of(null))).subscribe(r => {
-        this.sellers = (r as any)?._embedded?.sellerResponseDTOList ?? [];
-        this.cache.set(selKey, this.sellers);
+      this.selSvc.getAll(0, 200).pipe(catchError(() => of(null))).subscribe(response => {
+        if (response) {
+          const r = response as unknown as PagedResponse<SellerResponseDTO>;
+          this.sellers = r._embedded?.['sellerResponseDTOList'] ?? [];
+          this.cache.set(selKey, this.sellers);
+        }
         this.cdr.markForCheck();
       });
     }
@@ -119,11 +136,11 @@ export class Appointments implements OnInit {
     this.cdr.markForCheck();
   }
 
-  updateStatus(a: any, event: Event): void {
-    const status = (event.target as HTMLSelectElement).value;
-    // Invalida cache da página para refletir mudança de status
+  updateStatus(a: AppointmentResponseDTO, event: Event): void {
+    const status = (event.target as HTMLSelectElement).value as AppointmentStatus;
+    
     this.cache.invalidate(this.cacheKey(this.page));
-    this.svc.update(a.id, { appointmentStatus: status } as any).subscribe({
+    this.svc.update(a.id!, { appointmentStatus: status }).subscribe({
       next: () => this.toast.info('Status atualizado!'),
       error: (e) => this.toast.error(e?.message ?? 'Erro'),
     });
@@ -131,15 +148,17 @@ export class Appointments implements OnInit {
 
   save(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    
     const v    = this.form.value;
-    const body = {
-      date:              v.date,
-      appointmentType:   v.appointmentType,
-      appointmentStatus: v.appointmentStatus,
-      customer:          { id: v.customerId },
-      seller:            { id: v.sellerId },
+    const body: Partial<Appointment> = {
+      date:              v.date ?? undefined,
+      appointmentType:   (v.appointmentType as AppointmentType) ?? undefined,
+      appointmentStatus: (v.appointmentStatus as AppointmentStatus) ?? undefined,
+      customer:          { id: v.customerId ?? undefined },
+      seller:            { id: v.sellerId ?? undefined },
     };
-    this.svc.create(body as any).subscribe({
+
+    this.svc.create(body as Appointment).subscribe({
       next: () => {
         this.toast.success('Agendamento criado!');
         this.modalOpen = false;
@@ -153,14 +172,15 @@ export class Appointments implements OnInit {
     });
   }
 
-  async delete(a: any): Promise<void> {
+  async delete(a: AppointmentResponseDTO): Promise<void> {
     const r = await Swal.fire({
       title: 'Excluir agendamento?', icon: 'warning',
       showCancelButton: true, confirmButtonText: 'Sim',
       cancelButtonText: 'Não', confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
-    this.svc.delete(a.id).subscribe({
+    
+    this.svc.delete(a.id!).subscribe({
       next: () => {
         this.toast.success('Agendamento excluído!');
         this.invalidateAllPages();

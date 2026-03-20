@@ -33,8 +33,7 @@
           <span
             class="text-xs font-bold uppercase tracking-wider font-heading"
             style="color: var(--text-muted)"
-            >{{ stat.label }}</span
-          >
+          >{{ stat.label }}</span>
           <div
             class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
             [style.background]="stat.iconBg"
@@ -55,7 +54,6 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
     <div class="card p-5" role="region" aria-label="Agendamentos recentes">
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-heading font-semibold text-sm" style="color: var(--text-primary)">
@@ -66,8 +64,7 @@
           class="text-xs font-semibold transition-colors"
           style="color: var(--brand)"
           aria-label="Ver todos os agendamentos"
-          >Ver todos →</a
-        >
+        >Ver todos →</a>
       </div>
 
       @if (loading()) {
@@ -98,12 +95,12 @@
                 <div class="text-xs" style="color: var(--text-muted)">{{ fmtDate(a.date) }}</div>
               </div>
               <div class="flex gap-1.5 flex-wrap justify-end">
-                <span class="badge" [class]="aptTypeClass(a.appointmentType)">{{
-                  aptTypeLabel(a.appointmentType)
-                }}</span>
-                <span class="badge" [class]="aptStatusClass(a.appointmentStatus)">{{
-                  aptStatusLabel(a.appointmentStatus)
-                }}</span>
+                <span class="badge" [class]="aptTypeClass(a.appointmentType!)">
+                  {{ aptTypeLabel(a.appointmentType!) }}
+                </span>
+                <span class="badge" [class]="aptStatusClass(a.appointmentStatus!)">
+                  {{ aptStatusLabel(a.appointmentStatus!) }}
+                </span>
               </div>
             </div>
           }
@@ -121,8 +118,7 @@
           class="text-xs font-semibold transition-colors"
           style="color: var(--brand)"
           aria-label="Ver todas as filiais"
-          >Ver todas →</a
-        >
+        >Ver todas →</a>
       </div>
 
       @if (loading()) {
@@ -165,6 +161,5 @@
         </div>
       }
     </div>
-
   </div>
 </div>

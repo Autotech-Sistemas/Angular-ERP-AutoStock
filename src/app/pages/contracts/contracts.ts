@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
-import { ContractService, SaleService } from '../../services/business.service';
 import { CacheService } from '../../services/cache.service';
 import {
   formatCurrency,
@@ -13,6 +12,8 @@ import {
 import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
 import { Pagination } from '../../shared/components/pagination/pagination';
+import { ContractService } from '../../services/contract.service';
+import { SaleService } from '../../services/sale.service';
 
 @Component({
   selector: 'app-contracts',

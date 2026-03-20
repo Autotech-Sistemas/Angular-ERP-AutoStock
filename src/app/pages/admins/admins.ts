@@ -1,12 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnInit,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ToastService } from '../../core/services/toast.service';
-import { AdminService } from '../../services/business.service';
 import { CacheService } from '../../services/cache.service';
 import { maskPhone } from '../../shared/helpers/formatters.helper';
 import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
+import { AdminService } from '../../services/admin.service';
 
 @Component({
   selector: 'app-admins',
@@ -16,27 +22,29 @@ import { Modal } from '../../shared/components/modal/modal';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Admins implements OnInit {
-  private svc   = inject(AdminService);
+  private svc = inject(AdminService);
   private toast = inject(ToastService);
   private cache = inject(CacheService);
-  private fb    = inject(FormBuilder);
-  private cdr   = inject(ChangeDetectorRef);
+  private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
-  loading   = true;
-  saving    = false;
+  loading = true;
+  saving = false;
   modalOpen = false;
-  items:    any[] = [];
+  items: any[] = [];
 
   private readonly cacheKey = 'admins_all';
 
   form = this.fb.group({
-    name:     ['', Validators.required],
-    email:    ['', [Validators.required, Validators.email]],
+    name: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
-    phone:    [''],
+    phone: [''],
   });
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.load();
+  }
 
   load(forceRefresh = false): void {
     if (!forceRefresh && this.cache.has(this.cacheKey)) {
@@ -51,7 +59,7 @@ export class Admins implements OnInit {
 
     this.svc.getAll().subscribe({
       next: (r) => {
-        this.items   = Array.isArray(r) ? r : (r as any)?._embedded?.admResponseDTOList ?? [];
+        this.items = Array.isArray(r) ? r : ((r as any)?._embedded?.admResponseDTOList ?? []);
         this.cache.set(this.cacheKey, this.items);
         this.loading = false;
         this.cdr.markForCheck();
@@ -81,7 +89,10 @@ export class Admins implements OnInit {
   }
 
   save(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     this.saving = true;
     this.cdr.markForCheck();
 
@@ -89,7 +100,7 @@ export class Admins implements OnInit {
       next: () => {
         this.toast.success('Administrador cadastrado!');
         this.modalOpen = false;
-        this.saving    = false;
+        this.saving = false;
         this.cache.invalidate(this.cacheKey);
         this.load(true);
       },
@@ -112,12 +123,12 @@ export class Admins implements OnInit {
       confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
-    
+
     this.svc.delete(a.id).subscribe({
-      next: () => { 
-        this.toast.success('Administrador excluído!'); 
+      next: () => {
+        this.toast.success('Administrador excluído!');
         this.cache.invalidate(this.cacheKey);
-        this.load(true); 
+        this.load(true);
       },
       error: (e) => this.toast.error(e?.message ?? 'Erro'),
     });

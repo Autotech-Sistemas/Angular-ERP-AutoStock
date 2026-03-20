@@ -11,7 +11,20 @@ import {
   aptStatusLabel,
   aptStatusClass,
 } from '../../shared/helpers/formatters.helper';
-import { AppointmentResponse, DashboardSummary } from '../../shared/interfaces/models.interface';
+import {
+  DashboardSummary,
+  AppointmentResponseDTO,
+  BranchResponseDTO,
+  PagedResponse,
+} from '../../shared/interfaces/models.interface';
+
+export interface DashboardStat {
+  label: string;
+  emoji: string;
+  value: number;
+  sub: string;
+  iconBg: string;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -22,24 +35,23 @@ import { AppointmentResponse, DashboardSummary } from '../../shared/interfaces/m
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Dashboard implements OnInit {
-  private api   = inject(ApiService);
+  private api = inject(ApiService);
   private cache = inject(CacheService);
 
-  loading      = signal(true);
-  stats        = signal<any[]>([]);
-  appointments = signal<any[]>([]);
-  branches     = signal<any[]>([]);
+  loading = signal(true);
+  stats = signal<DashboardStat[]>([]);
+  appointments = signal<AppointmentResponseDTO[]>([]);
+  branches = signal<BranchResponseDTO[]>([]);
 
-  // Chaves de cache para isolar os blocos de dados
   private readonly cacheKeys = {
     summary: 'dash_summary',
     appointments: 'dash_appointments',
-    branches: 'dash_branches'
+    branches: 'dash_branches',
   };
 
-  fmtDate        = formatDate;
-  aptTypeLabel   = aptTypeLabel;
-  aptTypeClass   = aptTypeClass;
+  fmtDate = formatDate;
+  aptTypeLabel = aptTypeLabel;
+  aptTypeClass = aptTypeClass;
   aptStatusLabel = aptStatusLabel;
   aptStatusClass = aptStatusClass;
 
@@ -57,9 +69,8 @@ export class Dashboard implements OnInit {
   loadDashboardData(forceRefresh = false): void {
     this.loading.set(true);
 
-    // 1. Bloco de Resumo (Cards Superiores)
     if (!forceRefresh && this.cache.has(this.cacheKeys.summary)) {
-      this.stats.set(this.cache.get<any[]>(this.cacheKeys.summary)!);
+      this.stats.set(this.cache.get<DashboardStat[]>(this.cacheKeys.summary)!);
       this.loading.set(false);
     } else {
       this.api
@@ -76,10 +87,10 @@ export class Dashboard implements OnInit {
         )
         .subscribe((res) => {
           const statsData = this.buildStats(
-            res.totalVehicles,
-            res.totalInventory,
-            res.totalSales,
-            res.totalCustomers,
+            res.totalVehicles ?? 0,
+            res.totalInventory ?? 0,
+            res.totalSales ?? 0,
+            res.totalCustomers ?? 0,
           );
           this.stats.set(statsData);
           this.cache.set(this.cacheKeys.summary, statsData);
@@ -87,26 +98,28 @@ export class Dashboard implements OnInit {
         });
     }
 
-    // Carrega os outros dois blocos passando a flag de atualização
     this.loadRecentAppointments(forceRefresh);
     this.loadBranches(forceRefresh);
   }
 
   private loadRecentAppointments(forceRefresh: boolean): void {
     if (!forceRefresh && this.cache.has(this.cacheKeys.appointments)) {
-      this.appointments.set(this.cache.get<any[]>(this.cacheKeys.appointments)!);
+      this.appointments.set(this.cache.get<AppointmentResponseDTO[]>(this.cacheKeys.appointments)!);
       return;
     }
 
     this.api
-      .getAll<AppointmentResponse>('/appointments', 0, 5)
+      .getAll<AppointmentResponseDTO>('/appointments', 0, 5)
       .pipe(
         catchError(() =>
-          of({ _embedded: { appointmentResponseDTOList: [] } } as AppointmentResponse),
+          of({
+            _embedded: { appointmentResponseDTOList: [] },
+          } as unknown as PagedResponse<AppointmentResponseDTO>),
         ),
       )
-      .subscribe((res) => {
-        const list = res._embedded?.appointmentResponseDTOList ?? [];
+      .subscribe((response) => {
+        const r = response as unknown as PagedResponse<AppointmentResponseDTO>;
+        const list = r._embedded?.['appointmentResponseDTOList'] ?? [];
         this.appointments.set(list);
         this.cache.set(this.cacheKeys.appointments, list);
       });
@@ -114,22 +127,28 @@ export class Dashboard implements OnInit {
 
   private loadBranches(forceRefresh: boolean): void {
     if (!forceRefresh && this.cache.has(this.cacheKeys.branches)) {
-      this.branches.set(this.cache.get<any[]>(this.cacheKeys.branches)!);
+      this.branches.set(this.cache.get<BranchResponseDTO[]>(this.cacheKeys.branches)!);
       return;
     }
 
     this.api
-      .getAll('/branches', 0, 6)
-      .pipe(catchError(() => of(null)))
-      .subscribe((res) => {
-        const data = (res as any)?._embedded?.branchResponseDTOList ?? [];
-        const list = Array.isArray(data) ? data : [];
+      .getAll<BranchResponseDTO>('/branches', 0, 6)
+      .pipe(
+        catchError(() =>
+          of({
+            _embedded: { branchResponseDTOList: [] },
+          } as unknown as PagedResponse<BranchResponseDTO>),
+        ),
+      )
+      .subscribe((response) => {
+        const r = response as unknown as PagedResponse<BranchResponseDTO>;
+        const list = r._embedded?.['branchResponseDTOList'] ?? [];
         this.branches.set(list);
         this.cache.set(this.cacheKeys.branches, list);
       });
   }
 
-  private buildStats(v: number, inv: number, s: number, c: number) {
+  private buildStats(v: number, inv: number, s: number, c: number): DashboardStat[] {
     return [
       {
         label: 'Veículos',

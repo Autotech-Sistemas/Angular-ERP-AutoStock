@@ -11,16 +11,14 @@ import { ToastService } from '../../core/services/toast.service';
 import { CacheService } from '../../services/cache.service';
 import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
-import { CustomerService } from '../../services/customer.service';
-import { maskCpf, maskPhone } from '../../shared/helpers/formatters.helper';
+import { BranchService } from '../../services/branch.service';
 import {
-  CustomerResponseDTO,
-  CustomerAddressResponseDTO,
+  BranchResponseDTO,
   PagedResponse,
-  Customer,
+  Branch,
+  BranchAddress
 } from '../../shared/interfaces/models.interface';
 import { Pagination } from '../../shared/components/pagination/pagination';
-import { CustomerAddressService } from '../../services/customer-address.service';
 
 @Component({
   selector: 'app-branches',
@@ -30,8 +28,7 @@ import { CustomerAddressService } from '../../services/customer-address.service'
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Branches implements OnInit {
-  private svc = inject(CustomerService);
-  private addrSvc = inject(CustomerAddressService);
+  private svc = inject(BranchService);
   private toast = inject(ToastService);
   private cache = inject(CacheService);
   private fb = inject(FormBuilder);
@@ -39,11 +36,9 @@ export class Branches implements OnInit {
 
   loading = false;
   modalOpen = false;
-  activeTab = 'list';
 
-  items: CustomerResponseDTO[] = [];
-  filtered: CustomerResponseDTO[] = [];
-  addresses: CustomerAddressResponseDTO[] = [];
+  items: BranchResponseDTO[] = [];
+  filtered: BranchResponseDTO[] = [];
 
   editId = '';
   searchQuery = '';
@@ -54,12 +49,20 @@ export class Branches implements OnInit {
 
   form = this.fb.group({
     name: ['', Validators.required],
-    cpf: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', Validators.required],
-    birthDate: ['', Validators.required],
-    clientType: ['INDIVIDUAL', Validators.required],
-    validCnh: [false],
+    phoneNumber: [''],
+    managerName: ['', Validators.required],
+    openingHours: ['', Validators.required],
+    branchType: ['', Validators.required],
+    status: [''],
+    street: ['', Validators.required],
+    number: [null as number | null, Validators.required],
+    district: ['', Validators.required],
+    city: ['', Validators.required],
+    state: ['', Validators.required],
+    country: ['', Validators.required],
+    cep: [''],
+    complement: ['']
   });
 
   ngOnInit(): void {
@@ -67,7 +70,7 @@ export class Branches implements OnInit {
   }
 
   private cacheKey(page: number): string {
-    return `customers_page_${page}`;
+    return `branches_page_${page}`;
   }
 
   load(page = 0, forceRefresh = false): void {
@@ -75,12 +78,12 @@ export class Branches implements OnInit {
     const key = this.cacheKey(page);
 
     if (!forceRefresh && this.cache.has(key)) {
-      const cached = this.cache.get<{ items: CustomerResponseDTO[]; total: number }>(key)!;
+      const cached = this.cache.get<{ items: BranchResponseDTO[]; total: number }>(key)!;
       this.items = cached.items;
       this.totalElements = cached.total;
 
-      if (!this.cache.has('customers_all')) {
-        this.cache.set('customers_all', this.items);
+      if (!this.cache.has('branches_all')) {
+        this.cache.set('branches_all', this.items);
       }
       this.applyFilter();
       this.cdr.markForCheck();
@@ -92,12 +95,12 @@ export class Branches implements OnInit {
 
     this.svc.getAll(page).subscribe({
       next: (response) => {
-        const r = response as unknown as PagedResponse<CustomerResponseDTO>;
-        this.items = r._embedded?.['customerResponseDTOList'] ?? [];
+        const r = response as unknown as PagedResponse<BranchResponseDTO>;
+        this.items = r._embedded?.['branchResponseDTOList'] ?? [];
         this.totalElements = r.page?.totalElements ?? 0;
 
         this.cache.set(key, { items: this.items, total: this.totalElements });
-        this.cache.set('customers_all', this.items);
+        this.cache.set('branches_all', this.items);
 
         this.applyFilter();
         this.loading = false;
@@ -112,32 +115,15 @@ export class Branches implements OnInit {
 
   refresh(): void {
     this.cache.invalidate(this.cacheKey(this.page));
-    this.cache.invalidate('customers_all');
+    this.cache.invalidate('branches_all');
     this.load(this.page, true);
-  }
-
-  loadAddresses(forceRefresh = false): void {
-    const key = 'customers_addresses';
-
-    if (!forceRefresh && this.cache.has(key)) {
-      this.addresses = this.cache.get<CustomerAddressResponseDTO[]>(key)!;
-      this.cdr.markForCheck();
-      return;
-    }
-
-    this.addrSvc.getAll(0, 50).subscribe((response) => {
-      const r = response as unknown as PagedResponse<CustomerAddressResponseDTO>;
-      this.addresses = r._embedded?.['customerAddressResponseDTOList'] ?? [];
-      this.cache.set(key, this.addresses);
-      this.cdr.markForCheck();
-    });
   }
 
   applyFilter(): void {
     const q = this.searchQuery.toLowerCase();
     this.filtered = !q
       ? [...this.items]
-      : this.items.filter((c) => `${c.name} ${c.cpf} ${c.email}`.toLowerCase().includes(q));
+      : this.items.filter((b) => `${b.name} ${b.branchType} ${b.email}`.toLowerCase().includes(q));
   }
 
   onSearch(): void {
@@ -145,35 +131,36 @@ export class Branches implements OnInit {
     this.cdr.markForCheck();
   }
 
-  onCpf(e: Event): void {
-    const t = e.target as HTMLInputElement;
-    t.value = maskCpf(t.value);
-    this.form.patchValue({ cpf: t.value });
-  }
-
-  onPhone(e: Event): void {
-    const t = e.target as HTMLInputElement;
-    t.value = maskPhone(t.value);
-    this.form.patchValue({ phone: t.value });
-  }
-
   openNew(): void {
     this.editId = '';
-    this.form.reset({ clientType: 'INDIVIDUAL', validCnh: false });
+    this.form.reset();
     this.modalOpen = true;
     this.cdr.markForCheck();
   }
 
-  openEdit(c: CustomerResponseDTO): void {
-    this.editId = c.id!;
-    this.form.patchValue({ ...c });
-    this.modalOpen = true;
-    this.cdr.markForCheck();
-  }
+  openEdit(id: string): void {
+    const b = this.items.find(item => item.id === id);
+    if (!b) return;
 
-  switchTab(tab: string): void {
-    this.activeTab = tab;
-    if (tab === 'address') this.loadAddresses();
+    this.editId = b.id!;
+    this.form.patchValue({
+      name: b.name,
+      email: b.email,
+      phoneNumber: b.phoneNumber,
+      managerName: b.managerName,
+      openingHours: b.openingHours,
+      branchType: b.branchType,
+      status: b.status,
+      street: b.address?.street,
+      number: b.address?.number,
+      district: b.address?.district,
+      city: b.address?.city,
+      state: b.address?.state,
+      country: b.address?.country,
+      cep: b.address?.cep,
+      complement: b.address?.complement
+    });
+    this.modalOpen = true;
     this.cdr.markForCheck();
   }
 
@@ -183,15 +170,35 @@ export class Branches implements OnInit {
       return;
     }
 
-    const body = this.form.value as Partial<Customer>;
+    const v = this.form.value;
+    
+    const body: Partial<Branch> = {
+      name: v.name ?? undefined,
+      email: v.email ?? undefined,
+      phoneNumber: v.phoneNumber ?? undefined,
+      managerName: v.managerName ?? undefined,
+      openingHours: v.openingHours ?? undefined,
+      branchType: v.branchType ?? undefined,
+      status: v.status ?? undefined,
+      address: {
+        street: v.street,
+        number: v.number,
+        district: v.district,
+        city: v.city,
+        state: v.state,
+        country: v.country,
+        cep: v.cep,
+        complement: v.complement
+      } as BranchAddress
+    };
 
     const req = this.editId
       ? this.svc.update(this.editId, body)
-      : this.svc.create(body as Customer);
+      : this.svc.create(body as Branch);
 
     req.subscribe({
       next: () => {
-        this.toast.success(this.editId ? 'Cliente atualizado!' : 'Cliente cadastrado!');
+        this.toast.success(this.editId ? 'Filial atualizada!' : 'Filial cadastrada!');
         this.modalOpen = false;
         this.editId = '';
         this.invalidateAllPages();
@@ -204,9 +211,9 @@ export class Branches implements OnInit {
     });
   }
 
-  async delete(c: CustomerResponseDTO): Promise<void> {
+  async delete(b: BranchResponseDTO): Promise<void> {
     const r = await Swal.fire({
-      title: `Excluir ${c.name}?`,
+      title: `Excluir ${b.name}?`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sim',
@@ -215,32 +222,11 @@ export class Branches implements OnInit {
     });
     if (!r.isConfirmed) return;
 
-    this.svc.delete(c.id!).subscribe({
+    this.svc.delete(b.id!).subscribe({
       next: () => {
-        this.toast.success('Cliente excluído!');
+        this.toast.success('Filial excluída!');
         this.invalidateAllPages();
         this.load(this.page, true);
-      },
-      error: (e) => this.toast.error(e?.message ?? 'Erro'),
-    });
-  }
-
-  async deleteAddr(a: CustomerAddressResponseDTO): Promise<void> {
-    const r = await Swal.fire({
-      title: 'Excluir endereço?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sim',
-      cancelButtonText: 'Não',
-      confirmButtonColor: '#dc2626',
-    });
-    if (!r.isConfirmed) return;
-
-    this.addrSvc.delete(a.id!).subscribe({
-      next: () => {
-        this.toast.success('Endereço removido!');
-        this.cache.invalidate('customers_addresses');
-        this.loadAddresses(true);
       },
       error: (e) => this.toast.error(e?.message ?? 'Erro'),
     });
@@ -250,6 +236,6 @@ export class Branches implements OnInit {
     for (let i = 0; i <= Math.ceil(this.totalElements / 12); i++) {
       this.cache.invalidate(this.cacheKey(i));
     }
-    this.cache.invalidate('customers_all');
+    this.cache.invalidate('branches_all');
   }
 }
