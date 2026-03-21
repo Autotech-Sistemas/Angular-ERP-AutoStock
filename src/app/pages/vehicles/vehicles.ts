@@ -6,11 +6,11 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { VehicleService } from '../../services/vehicle.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CacheService } from '../../services/cache.service';
-import { Vehicle } from '../../shared/interfaces/models.interface';
+import { VehicleResponseDTO, PagedResponse } from '../../shared/interfaces/models.interface';
 import {
   formatCurrency,
   availabilityClass,
@@ -20,12 +20,12 @@ import {
   fuelLabel,
 } from '../../shared/helpers/formatters.helper';
 import Swal from 'sweetalert2';
-import { Modal } from '../../shared/components/modal/modal';
 import { Pagination } from '../../shared/components/pagination/pagination';
+import { VehicleForm } from './vehicle-form/vehicle-form';
 
 @Component({
   selector: 'app-vehicles',
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, Modal, Pagination],
+  imports: [CommonModule, FormsModule, Pagination, VehicleForm],
   templateUrl: './vehicles.html',
   styleUrl: './vehicles.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,15 +34,15 @@ export class Vehicles implements OnInit {
   private svc = inject(VehicleService);
   private toast = inject(ToastService);
   private cache = inject(CacheService);
-  private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
 
   loading = false;
-  saving = false;
   modalOpen = false;
-  items: Vehicle[] = [];
-  filtered: Vehicle[] = [];
-  editId = '';
+  selectedVehicle: VehicleResponseDTO | null = null;
+
+  items: VehicleResponseDTO[] = [];
+  filtered: VehicleResponseDTO[] = [];
+
   searchQuery = '';
   typeFilter = '';
   page = 0;
@@ -57,27 +57,6 @@ export class Vehicles implements OnInit {
   fuelLabel = fuelLabel;
   getYear = (d: string) => (d ? new Date(d).getFullYear() : '—');
 
-  form = this.fb.group({
-    brand: ['', Validators.required],
-    model: ['', Validators.required],
-    type: ['CAR', Validators.required],
-    category: ['SEDAN', Validators.required],
-    manufactureYear: ['', Validators.required],
-    color: ['', Validators.required],
-    mileage: [0],
-    weight: [0],
-    fuelType: ['GASOLINE', Validators.required],
-    numberOfCylinders: [4],
-    enginePower: [0],
-    fuelTankCapacity: [0],
-    passengerCapacity: [5],
-    salePrice: [0, Validators.required],
-    status: ['NEW'],
-    availability: ['AVAILABLE'],
-    infotainmentSystem: ['', Validators.required],
-    description: ['', Validators.required],
-  });
-
   ngOnInit(): void {
     this.load();
   }
@@ -91,7 +70,7 @@ export class Vehicles implements OnInit {
     const key = this.cacheKey(page);
 
     if (!forceRefresh && this.cache.has(key)) {
-      const cached = this.cache.get<{ items: Vehicle[]; total: number }>(key)!;
+      const cached = this.cache.get<{ items: VehicleResponseDTO[]; total: number }>(key)!;
       this.items = cached.items;
       this.totalElements = cached.total;
       this.applyFilter();
@@ -103,9 +82,11 @@ export class Vehicles implements OnInit {
     this.cdr.markForCheck();
 
     this.svc.getAll(page).subscribe({
-      next: (r) => {
-        this.items = (r as any)?._embedded?.vehicleResponseDTOList ?? [];
-        this.totalElements = (r as any)?.page?.totalElements ?? 0;
+      next: (response) => {
+        const r = response as unknown as PagedResponse<VehicleResponseDTO>;
+        this.items = r._embedded?.['vehicleResponseDTOList'] ?? [];
+        this.totalElements = r.page?.totalElements ?? 0;
+
         this.cache.set(key, { items: this.items, total: this.totalElements });
         this.applyFilter();
         this.loading = false;
@@ -142,60 +123,24 @@ export class Vehicles implements OnInit {
   }
 
   openNew(): void {
-    this.editId = '';
-    this.form.reset({
-      type: 'CAR',
-      category: 'SEDAN',
-      fuelType: 'GASOLINE',
-      status: 'NEW',
-      availability: 'AVAILABLE',
-      mileage: 0,
-      weight: 0,
-      numberOfCylinders: 4,
-      enginePower: 0,
-      fuelTankCapacity: 0,
-      passengerCapacity: 5,
-      salePrice: 0,
-    });
+    this.selectedVehicle = null;
     this.modalOpen = true;
     this.cdr.markForCheck();
   }
 
-  openEdit(v: Vehicle): void {
-    this.editId = v.id ?? '';
-    this.form.patchValue({ ...v });
+  openEdit(v: VehicleResponseDTO): void {
+    this.selectedVehicle = v;
     this.modalOpen = true;
     this.cdr.markForCheck();
   }
 
-  save(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-    this.saving = true;
-    this.cdr.markForCheck();
-
-    const body = this.form.value as Vehicle;
-    const req = this.editId ? this.svc.update(this.editId, body) : this.svc.create(body);
-
-    req.subscribe({
-      next: () => {
-        this.toast.success(this.editId ? 'Veículo atualizado!' : 'Veículo cadastrado!');
-        this.modalOpen = false;
-        this.saving = false;
-        this.cache.invalidate(this.cacheKey(this.page));
-        this.load(this.page, true);
-      },
-      error: (e) => {
-        this.toast.error(e?.message ?? 'Erro ao salvar');
-        this.saving = false;
-        this.cdr.markForCheck();
-      },
-    });
+  onSaved(): void {
+    this.modalOpen = false;
+    this.cache.invalidate(this.cacheKey(this.page));
+    this.load(this.page, true);
   }
 
-  async delete(v: Vehicle): Promise<void> {
+  async delete(v: VehicleResponseDTO): Promise<void> {
     const r = await Swal.fire({
       title: `Excluir ${v.brand} ${v.model}?`,
       icon: 'warning',

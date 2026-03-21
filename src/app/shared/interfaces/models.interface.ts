@@ -1,5 +1,3 @@
-// ─── Pagination & HATEOAS ───────────────────────────────────────────────────
-
 export interface Link {
   href: string;
   hreflang?: string;
@@ -28,10 +26,7 @@ export interface HATEOASResponse<K extends string, T> {
   page?: PageMetadata;
 }
 
-/** Interface genérica usada pelo ApiService.getAll */
 export interface PagedResponse<T> extends HATEOASResponse<string, T> {}
-
-// ─── Auth & Admin ────────────────────────────────────────────────────────────
 
 export interface LoginRequest { 
   email?: string; 
@@ -74,16 +69,12 @@ export interface AdminResponseDTO extends Admin {
   _links?: Links;
 }
 
-// ─── Dashboard ─────────────────────────────────────────────────────────────────
-
 export interface DashboardSummary {
   totalVehicles?: number;
   totalInventory?: number;
   totalSales?: number;
   totalCustomers?: number;
 }
-
-// ─── Vehicle ─────────────────────────────────────────────────────────────────
 
 export type VehicleType = 'CAR' | 'MOTORCYCLE' | 'VAN' | 'BUS' | 'TRUCK' | 'BOAT' | 'OTHER_VEHICLE_TYPE';
 export type VehicleCategory = 'SUV' | 'SEDAN' | 'HATCHBACK' | 'SPORTS' | 'UTILITARIAN' | 'COUPE' | 'CONVERTIBLE' | 'WAGON' | 'PICKUP' | 'VAN' | 'MOTORHOME' | 'ELECTRIC' | 'HYBRID' | 'OTHERS';
@@ -111,7 +102,7 @@ export interface Vehicle {
   model: string;
   type: VehicleType;
   category: VehicleCategory;
-  manufactureYear: string;
+  manufactureYear: number;
   color: string;
   mileage: number;
   weight: number;
@@ -127,6 +118,27 @@ export interface Vehicle {
   availability?: VehicleAvailability;
   description: string;
   lastUpdate?: string;
+  brakeType?: string;
+  groundClearance?: number;
+  autonomyRoad?: number;
+  autonomyCity?: number;
+  numberOfGears?: number;
+  steeringType?: string;
+  tireSize?: number;
+  doors?: number;
+  trunkCapacity?: number;
+  driveType?: string;
+  hasLuggageCarrier?: boolean;
+  isCargo?: boolean;
+  cargoVolume?: number;
+  loadCapacity?: number;
+  axles?: number;
+  numberOfSeats?: number;
+  hasAccessibility?: boolean;
+  length?: number;
+  hullMaterial?: string;
+  autonomy?: number;
+  usage?: string;
   specificDetails?: VehicleSpecificDetail[];
   images?: VehicleImageFile[];
 }
@@ -138,8 +150,6 @@ export interface VehicleResponseDTO extends Vehicle {
 export interface VehicleSpecificDetailResponseDTO extends VehicleSpecificDetail {
   _links?: Links;
 }
-
-// ─── Inventory ───────────────────────────────────────────────────────────────
 
 export interface InventoryItem {
   id?: string;
@@ -157,8 +167,6 @@ export interface InventoryItemResponseDTO extends Omit<InventoryItem, 'vehicle'>
   vehicle?: VehicleResponseDTO;
   _links?: Links;
 }
-
-// ─── Customer ────────────────────────────────────────────────────────────────
 
 export type ClientType = 'INDIVIDUAL' | 'CORPORATE' | 'OTHERS';
 
@@ -194,8 +202,6 @@ export interface CustomerAddressResponseDTO extends CustomerAddress {
   _links?: Links;
 }
 
-// ─── Seller ──────────────────────────────────────────────────────────────────
-
 export interface Seller {
   id?: string;
   name: string;
@@ -220,8 +226,6 @@ export interface SellerResponseDTO {
   email?: string;
   _links?: Links;
 }
-
-// ─── Sale & Contract ─────────────────────────────────────────────────────────
 
 export interface Sale {
   id?: string;
@@ -267,8 +271,6 @@ export interface ContractResponseDTO extends Omit<Contract, 'sale'> {
   _links?: Links;
 }
 
-// ─── Branch ──────────────────────────────────────────────────────────────────
-
 export interface BranchAddress {
   id?: string;
   street: string;
@@ -304,8 +306,6 @@ export interface BranchResponseDTO extends Omit<Branch, 'address'> {
   _links?: Links;
 }
 
-// ─── Appointment ─────────────────────────────────────────────────────────────
-
 export type AppointmentType = 'TEST_DRIVE' | 'NEGOTIATION_VISIT';
 export type AppointmentStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
 
@@ -334,16 +334,12 @@ export interface AppointmentResponse {
   page?: PageMetadata;
 }
 
-// ─── Nav ─────────────────────────────────────────────────────────────────────
-
 export interface NavItem {
   path: string;
   label: string;
   icon: string;
   section: string;
 }
-
-// ─── Upload / File ───────────────────────────────────────────────────────────
 
 export interface UploadFileResponseDTO {
   fileName?: string;

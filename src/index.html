@@ -5,46 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-    <!-- SEO -->
+    <!-- Primary Meta Tags -->
     <title>AutoStock — Sistema ERP para Concessionárias de Veículos</title>
+    <meta name="title" content="AutoStock — Sistema ERP para Concessionárias de Veículos" />
     <meta
       name="description"
       content="AutoStock é um sistema ERP completo para gestão de concessionárias: controle de estoque, vendas, contratos, clientes e muito mais."
     />
-    <meta
-      name="keywords"
-      content="ERP concessionária, gestão de veículos, controle de estoque, sistema de vendas automotivo"
-    />
-    <meta name="author" content="AutoStock" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://autostock.com.br/" />
+    <meta name="author" content="AutoTech Sistemas" />
+    <!-- Regras avançadas para exibição no Google (Snippets e Imagens Grandes) -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://autostock.autotechsistemas.com.br/" />
 
-    <!-- Open Graph -->
+    <!-- Open Graph / Facebook (Otimizado para compartilhamento no WhatsApp, LinkedIn, etc) -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="AutoStock — ERP para Concessionárias" />
+    <meta property="og:url" content="https://autostock.autotechsistemas.com.br/" />
+    <meta property="og:title" content="AutoStock — Sistema ERP para Concessionárias de Veículos" />
     <meta
       property="og:description"
       content="Gestão completa de veículos, estoque, vendas e clientes em uma única plataforma."
     />
-    <meta property="og:url" content="https://autostock.com.br/" />
-    <meta property="og:site_name" content="AutoStock" />
+    <!-- Lembre-se de adicionar a imagem real no seu diretório assets -->
+    <meta property="og:image" content="https://autostock.autotechsistemas.com.br/favicon.ico" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="AutoStock ERP" />
     <meta property="og:locale" content="pt_BR" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://autostock.autotechsistemas.com.br/" />
     <meta name="twitter:title" content="AutoStock — ERP para Concessionárias" />
     <meta
       name="twitter:description"
       content="Gestão completa de veículos, estoque, vendas e clientes."
     />
+    <meta name="twitter:image" content="https://autostock.autotechsistemas.com.br/favicon.ico" />
 
-    <!-- Theme -->
+    <!-- Theme & Mobile App Behaviour -->
     <meta name="theme-color" content="#ea580c" />
     <meta name="color-scheme" content="dark light" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AutoStock" />
+    <meta name="format-detection" content="telephone=no" />
 
-    <!-- Fonts -->
+    <!-- Performance & Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -52,14 +58,37 @@
       rel="stylesheet"
     />
 
-    <!-- Favicon inline SVG -->
-    <link
-      rel="icon"
-      type="image/svg+xml"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23ea580c'/><text y='22' x='5' font-size='18' fill='white' font-family='sans-serif' font-weight='bold'>A</text></svg>"
-    />
+    <!-- Icons -->
+    <link rel="icon" type="image/ico" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="favicon.ico" />
+
+    <!-- Structured Data (JSON-LD) para o Google -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "AutoStock ERP",
+        "operatingSystem": "Web",
+        "applicationCategory": "BusinessApplication",
+        "url": "https://autostock.autotechsistemas.com.br/",
+        "description": "Sistema ERP completo para gestão de concessionárias de veículos. Controle de estoque, vendas, contratos e clientes.",
+        "creator": {
+          "@type": "Organization",
+          "name": "AutoTech Sistemas",
+          "url": "https://autotechsistemas.com.br/"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "BRL"
+        }
+      }
+    </script>
   </head>
   <body class="font-body">
+    <noscript>
+      Você precisa habilitar o JavaScript para utilizar o sistema AutoStock ERP.
+    </noscript>
     <app-root></app-root>
   </body>
 </html>

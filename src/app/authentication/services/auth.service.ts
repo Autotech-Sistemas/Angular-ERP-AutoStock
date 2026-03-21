@@ -22,8 +22,8 @@ export class AuthService {
         if (!token) throw new Error('Token não recebido');
 
         const user: CurrentUser = {
-          email: req.email,
-          name: res?.token?.username ?? req.email,
+          email: req.email ?? '',
+          name: res?.token?.username ?? req.email ?? '',
         };
 
         localStorage.setItem(this.TOKEN, token);

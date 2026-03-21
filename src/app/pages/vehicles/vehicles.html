@@ -5,7 +5,6 @@
       <p class="page-subtitle">Cadastro e gerenciamento do catálogo</p>
     </div>
     <div class="flex items-center gap-2">
-      <!-- Botão de refresh — invalida cache e recarrega da API -->
       <button
         class="btn-secondary"
         (click)="refresh()"
@@ -48,7 +47,6 @@
   </div>
 
   <div class="card overflow-hidden">
-    <!-- Toolbar -->
     <div
       class="p-4 flex flex-wrap gap-3 items-center justify-between"
       style="border-bottom: 1px solid var(--surface-border)"
@@ -88,10 +86,11 @@
         <option value="MOTORCYCLE">Moto</option>
         <option value="TRUCK">Caminhão</option>
         <option value="VAN">Van</option>
+        <option value="BUS">Ônibus</option>
+        <option value="BOAT">Barco</option>
       </select>
     </div>
 
-    <!-- Table -->
     <div class="overflow-x-auto">
       <table class="data-table" role="grid" aria-label="Lista de veículos">
         <thead>
@@ -194,135 +193,10 @@
     </div>
   </div>
 
-  <!-- Modal -->
-  <app-modal
-    [title]="editId ? 'Editar Veículo' : 'Novo Veículo'"
-    [open]="modalOpen"
-    (closeModal)="modalOpen = false"
-  >
-    <ng-container slot="body">
-      <form 
-        [formGroup]="form" 
-        class="grid grid-cols-2 gap-4"
-        style="max-height: 50vh; overflow-y: auto; overflow-x: hidden; padding-right: 0.5rem; align-content: start;"
-      >
-        <div>
-          <label class="form-label" for="v-brand">Marca *</label>
-          <input id="v-brand" class="form-input" formControlName="brand" placeholder="Toyota" />
-        </div>
-        <div>
-          <label class="form-label" for="v-model">Modelo *</label>
-          <input id="v-model" class="form-input" formControlName="model" placeholder="Corolla" />
-        </div>
-        <div>
-          <label class="form-label" for="v-type">Tipo *</label>
-          <select id="v-type" class="form-input" formControlName="type">
-            <option value="CAR">Carro</option>
-            <option value="MOTORCYCLE">Moto</option>
-            <option value="VAN">Van</option>
-            <option value="BUS">Ônibus</option>
-            <option value="TRUCK">Caminhão</option>
-            <option value="BOAT">Barco</option>
-            <option value="OTHER_VEHICLE_TYPE">Outro</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label" for="v-cat">Categoria *</label>
-          <select id="v-cat" class="form-input" formControlName="category">
-            <option value="SUV">SUV</option>
-            <option value="SEDAN">Sedan</option>
-            <option value="HATCHBACK">Hatchback</option>
-            <option value="SPORTS">Esportivo</option>
-            <option value="PICKUP">Pickup</option>
-            <option value="ELECTRIC">Elétrico</option>
-            <option value="HYBRID">Híbrido</option>
-            <option value="OTHERS">Outro</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label" for="v-year">Ano Fabricação *</label>
-          <input id="v-year" type="date" class="form-input" formControlName="manufactureYear" />
-        </div>
-        <div>
-          <label class="form-label" for="v-color">Cor *</label>
-          <input id="v-color" class="form-input" formControlName="color" placeholder="Branco" />
-        </div>
-        <div>
-          <label class="form-label" for="v-km">Quilometragem *</label>
-          <input id="v-km" type="number" class="form-input" formControlName="mileage" placeholder="0" />
-        </div>
-        <div>
-          <label class="form-label" for="v-weight">Peso (kg) *</label>
-          <input id="v-weight" type="number" class="form-input" formControlName="weight" placeholder="1200" />
-        </div>
-        <div>
-          <label class="form-label" for="v-fuel">Combustível *</label>
-          <select id="v-fuel" class="form-input" formControlName="fuelType">
-            <option value="GASOLINE">Gasolina</option>
-            <option value="DIESEL">Diesel</option>
-            <option value="ELECTRIC">Elétrico</option>
-            <option value="HYBRID">Híbrido</option>
-            <option value="ETHANOL">Etanol</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label" for="v-cyl">Cilindros *</label>
-          <input id="v-cyl" type="number" class="form-input" formControlName="numberOfCylinders" placeholder="4" />
-        </div>
-        <div>
-          <label class="form-label" for="v-power">Potência (cv) *</label>
-          <input id="v-power" type="number" class="form-input" formControlName="enginePower" placeholder="150" />
-        </div>
-        <div>
-          <label class="form-label" for="v-tank">Tanque (L) *</label>
-          <input id="v-tank" type="number" class="form-input" formControlName="fuelTankCapacity" placeholder="50" />
-        </div>
-        <div>
-          <label class="form-label" for="v-pass">Passageiros *</label>
-          <input id="v-pass" type="number" class="form-input" formControlName="passengerCapacity" placeholder="5" />
-        </div>
-        <div>
-          <label class="form-label" for="v-price">Preço (R$) *</label>
-          <input id="v-price" type="number" class="form-input" formControlName="salePrice" placeholder="0.00" step="0.01" />
-        </div>
-        <div>
-          <label class="form-label" for="v-status">Status</label>
-          <select id="v-status" class="form-input" formControlName="status">
-            <option value="NEW">Novo</option>
-            <option value="USED">Usado</option>
-            <option value="SEMINOVO">Seminovo</option>
-          </select>
-        </div>
-        <div>
-          <label class="form-label" for="v-avail">Disponibilidade</label>
-          <select id="v-avail" class="form-input" formControlName="availability">
-            <option value="AVAILABLE">Disponível</option>
-            <option value="SOLD">Vendido</option>
-            <option value="PENDING">Pendente</option>
-            <option value="RESERVED">Reservado</option>
-            <option value="IN_NEGOTIATION">Em Negociação</option>
-          </select>
-        </div>
-        <div class="col-span-2">
-          <label class="form-label" for="v-info">Infotainment *</label>
-          <input id="v-info" class="form-input" formControlName="infotainmentSystem" placeholder="Android Auto, CarPlay..." />
-        </div>
-        <div class="col-span-2">
-          <label class="form-label" for="v-desc">Descrição *</label>
-          <textarea id="v-desc" class="form-input" formControlName="description" rows="2" placeholder="Descrição..."></textarea>
-        </div>
-      </form>
-    </ng-container>
-    <ng-container slot="footer">
-      <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
-      <button class="btn-brand" (click)="save()" [disabled]="saving">
-        @if (saving) {
-          <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="30 60" stroke-linecap="round" />
-          </svg>
-        }
-        Salvar
-      </button>
-    </ng-container>
-  </app-modal>
+  <app-vehicle-form
+    [isOpen]="modalOpen"
+    [vehicle]="selectedVehicle"
+    (closed)="modalOpen = false"
+    (saved)="onSaved()"
+  ></app-vehicle-form>
 </div>

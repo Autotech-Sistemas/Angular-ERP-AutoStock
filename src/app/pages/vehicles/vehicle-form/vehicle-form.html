@@ -1,0 +1,303 @@
+<app-modal
+  [title]="vehicle ? 'Editar Veículo' : (modalStep === 1 ? 'Selecione o Tipo' : 'Novo Veículo')"
+  [open]="isOpen"
+  (closeModal)="close()"
+>
+  <ng-container slot="body">
+    
+    @if (modalStep > 1) {
+      <div class="flex items-center justify-between mb-6 relative px-2">
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 z-0 rounded" style="background: var(--surface-border)"></div>
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 h-1 z-0 rounded transition-all duration-300" style="background: var(--brand)" [style.width]="((modalStep - 2) / (maxSteps - 2)) * 100 + '%'"></div>
+        
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-colors" [ngClass]="modalStep >= 2 ? 'text-white' : 'text-gray-400'" [style.background]="modalStep >= 2 ? 'var(--brand)' : 'var(--surface-tertiary)'">1</div>
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-colors" [ngClass]="modalStep >= 3 ? 'text-white' : 'text-gray-400'" [style.background]="modalStep >= 3 ? 'var(--brand)' : 'var(--surface-tertiary)'">2</div>
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-colors" [ngClass]="modalStep >= 4 ? 'text-white' : 'text-gray-400'" [style.background]="modalStep >= 4 ? 'var(--brand)' : 'var(--surface-tertiary)'">3</div>
+      </div>
+    }
+
+    @if (modalStep === 1) {
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 p-2">
+        <button class="card p-6 flex flex-col items-center justify-center gap-3 hover:border-brand transition-colors" (click)="selectType('CAR')">
+          <span class="text-3xl">🚗</span><span class="font-bold font-heading text-sm">Carro</span>
+        </button>
+        <button class="card p-6 flex flex-col items-center justify-center gap-3 hover:border-brand transition-colors" (click)="selectType('MOTORCYCLE')">
+          <span class="text-3xl">🏍️</span><span class="font-bold font-heading text-sm">Moto</span>
+        </button>
+        <button class="card p-6 flex flex-col items-center justify-center gap-3 hover:border-brand transition-colors" (click)="selectType('TRUCK')">
+          <span class="text-3xl">🚚</span><span class="font-bold font-heading text-sm">Caminhão</span>
+        </button>
+        <button class="card p-6 flex flex-col items-center justify-center gap-3 hover:border-brand transition-colors" (click)="selectType('VAN')">
+          <span class="text-3xl">🚐</span><span class="font-bold font-heading text-sm">Van</span>
+        </button>
+        <button class="card p-6 flex flex-col items-center justify-center gap-3 hover:border-brand transition-colors" (click)="selectType('BUS')">
+          <span class="text-3xl">🚌</span><span class="font-bold font-heading text-sm">Ônibus</span>
+        </button>
+        <button class="card p-6 flex flex-col items-center justify-center gap-3 hover:border-brand transition-colors" (click)="selectType('BOAT')">
+          <span class="text-3xl">🚤</span><span class="font-bold font-heading text-sm">Barco</span>
+        </button>
+        <button class="card p-6 flex flex-col items-center justify-center gap-3 hover:border-brand transition-colors" (click)="selectType('OTHER_VEHICLE_TYPE')">
+          <span class="text-3xl">🚜</span><span class="font-bold font-heading text-sm">Outros</span>
+        </button>
+      </div>
+    } 
+    
+    <form [formGroup]="form" style="max-height: 55vh; overflow-y: auto; overflow-x: hidden; padding-right: 0.5rem;">
+      
+      @if (modalStep === 2) {
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="form-label" for="v-branch">Filial Responsável *</label>
+            <select id="v-branch" class="form-input" [class.border-red-500]="isInvalid('branchId')" formControlName="branchId">
+              <option value="">Selecione a filial...</option>
+              @for (b of branches; track b.id) {
+                <option [value]="b.id">{{ b.name }}</option>
+              }
+            </select>
+            @if (isInvalid('branchId')) { <span class="text-xs text-red-500 mt-1 block">Selecione uma filial</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-brand">Marca *</label>
+            <input id="v-brand" class="form-input" [class.border-red-500]="isInvalid('brand')" formControlName="brand" placeholder="Ex: Toyota" />
+            @if (isInvalid('brand')) { <span class="text-xs text-red-500 mt-1 block">Marca obrigatória</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-model">Modelo *</label>
+            <input id="v-model" class="form-input" [class.border-red-500]="isInvalid('model')" formControlName="model" placeholder="Ex: Corolla" />
+            @if (isInvalid('model')) { <span class="text-xs text-red-500 mt-1 block">Modelo obrigatório</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-cat">Categoria *</label>
+            <select id="v-cat" class="form-input" [class.border-red-500]="isInvalid('category')" formControlName="category">
+              <option value="SUV">SUV</option>
+              <option value="SEDAN">Sedan</option>
+              <option value="HATCHBACK">Hatchback</option>
+              <option value="SPORTS">Esportivo</option>
+              <option value="PICKUP">Pickup</option>
+              <option value="ELECTRIC">Elétrico</option>
+              <option value="HYBRID">Híbrido</option>
+              <option value="OTHERS">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="v-year">Ano Fabricação *</label>
+            <input id="v-year" type="number" class="form-input" [class.border-red-500]="isInvalid('manufactureYear')" formControlName="manufactureYear" placeholder="2024" />
+            @if (isInvalid('manufactureYear')) { <span class="text-xs text-red-500 mt-1 block">Ano obrigatório e válido</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-color">Cor *</label>
+            <input id="v-color" class="form-input" [class.border-red-500]="isInvalid('color')" formControlName="color" placeholder="Ex: Branco" />
+            @if (isInvalid('color')) { <span class="text-xs text-red-500 mt-1 block">Cor obrigatória</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-price">Preço Venda (R$) *</label>
+            <input id="v-price" type="number" class="form-input" [class.border-red-500]="isInvalid('salePrice')" formControlName="salePrice" placeholder="0.00" />
+            @if (isInvalid('salePrice')) { <span class="text-xs text-red-500 mt-1 block">Preço obrigatório</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-status">Status</label>
+            <select id="v-status" class="form-input" formControlName="status">
+              <option value="NEW">Novo</option>
+              <option value="USED">Usado</option>
+              <option value="SEMINOVO">Seminovo</option>
+              <option value="OTHERS">Outros</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="v-avail">Disponibilidade</label>
+            <select id="v-avail" class="form-input" formControlName="availability">
+              <option value="AVAILABLE">Disponível</option>
+              <option value="SOLD">Vendido</option>
+              <option value="PENDING">Pendente</option>
+              <option value="RESERVED">Reservado</option>
+              <option value="IN_NEGOTIATION">Em Negociação</option>
+              <option value="OTHERS">Outros</option>
+            </select>
+          </div>
+        </div>
+      }
+
+      @if (modalStep === 3) {
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="form-label" for="v-km">Quilometragem (km) *</label>
+            <input id="v-km" type="number" class="form-input" [class.border-red-500]="isInvalid('mileage')" formControlName="mileage" placeholder="0" />
+            @if (isInvalid('mileage')) { <span class="text-xs text-red-500 mt-1 block">Quilometragem obrigatória</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-weight">Peso (kg) *</label>
+            <input id="v-weight" type="number" class="form-input" [class.border-red-500]="isInvalid('weight')" formControlName="weight" placeholder="1200" />
+            @if (isInvalid('weight')) { <span class="text-xs text-red-500 mt-1 block">Peso obrigatório</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-fuel">Combustível *</label>
+            <select id="v-fuel" class="form-input" [class.border-red-500]="isInvalid('fuelType')" formControlName="fuelType">
+              <option value="GASOLINE">Gasolina</option>
+              <option value="DIESEL">Diesel</option>
+              <option value="ELECTRIC">Elétrico</option>
+              <option value="HYBRID">Híbrido</option>
+              <option value="ETHANOL">Etanol</option>
+              <option value="OTHERS">Outros</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="v-tank">Tanque (L) *</label>
+            <input id="v-tank" type="number" class="form-input" [class.border-red-500]="isInvalid('fuelTankCapacity')" formControlName="fuelTankCapacity" placeholder="50" />
+            @if (isInvalid('fuelTankCapacity')) { <span class="text-xs text-red-500 mt-1 block">Capacidade do tanque obrigatória</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-cyl">Cilindros *</label>
+            <input id="v-cyl" type="number" class="form-input" [class.border-red-500]="isInvalid('numberOfCylinders')" formControlName="numberOfCylinders" placeholder="4" />
+            @if (isInvalid('numberOfCylinders')) { <span class="text-xs text-red-500 mt-1 block">Cilindros obrigatórios</span> }
+          </div>
+          <div>
+            <label class="form-label" for="v-power">Potência (cv) *</label>
+            <input id="v-power" type="number" class="form-input" [class.border-red-500]="isInvalid('enginePower')" formControlName="enginePower" placeholder="150" />
+            @if (isInvalid('enginePower')) { <span class="text-xs text-red-500 mt-1 block">Potência obrigatória</span> }
+          </div>
+          <div class="col-span-2">
+            <label class="form-label" for="v-pass">Passageiros *</label>
+            <input id="v-pass" type="number" class="form-input" [class.border-red-500]="isInvalid('passengerCapacity')" formControlName="passengerCapacity" placeholder="5" />
+            @if (isInvalid('passengerCapacity')) { <span class="text-xs text-red-500 mt-1 block">Passageiros obrigatórios</span> }
+          </div>
+        </div>
+      }
+
+      @if (modalStep === 4) {
+        <div class="grid grid-cols-2 gap-4">
+          @if (['CAR', 'MOTORCYCLE', 'TRUCK', 'VAN', 'BUS'].includes(form.value.type ?? '')) {
+            <p class="text-xs font-bold uppercase tracking-wider font-heading pt-2 col-span-2" style="color: var(--brand)">Especificações Terrestres</p>
+            <div>
+              <label class="form-label" for="v-trans">Transmissão</label>
+              <select id="v-trans" class="form-input" formControlName="transmissionType">
+                <option value="">Selecione...</option>
+                <option value="MANUAL">Manual</option>
+                <option value="AUTOMATIC">Automática</option>
+                <option value="SEMI_AUTOMATIC">Semi-Automática</option>
+                <option value="CVT">CVT</option>
+                <option value="DUAL_CLUTCH">Embreagem Dupla</option>
+                <option value="OTHERS">Outros</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="v-gears">Marchas</label>
+              <input id="v-gears" type="number" class="form-input" formControlName="numberOfGears" placeholder="5" />
+            </div>
+            <div>
+              <label class="form-label" for="v-steering">Direção</label>
+              <input id="v-steering" class="form-input" formControlName="steeringType" placeholder="Elétrica..." />
+            </div>
+            <div>
+              <label class="form-label" for="v-brake">Freios</label>
+              <input id="v-brake" class="form-input" formControlName="brakeType" placeholder="ABS..." />
+            </div>
+            <div>
+              <label class="form-label" for="v-clearance">Alt. Solo (mm)</label>
+              <input id="v-clearance" type="number" class="form-input" formControlName="groundClearance" placeholder="150" />
+            </div>
+            <div>
+              <label class="form-label" for="v-tire">Aro do Pneu</label>
+              <input id="v-tire" type="number" class="form-input" formControlName="tireSize" placeholder="15" />
+            </div>
+          }
+
+          @if (form.value.type === 'CAR') {
+            <div>
+              <label class="form-label" for="v-doors">Portas</label>
+              <input id="v-doors" type="number" class="form-input" formControlName="doors" placeholder="4" />
+            </div>
+            <div>
+              <label class="form-label" for="v-trunk">Porta-malas (L)</label>
+              <input id="v-trunk" type="number" class="form-input" formControlName="trunkCapacity" placeholder="400" />
+            </div>
+          }
+          
+          @if (form.value.type === 'MOTORCYCLE') {
+            <div class="col-span-2 flex items-center gap-2 mt-2">
+              <input id="v-luggage" type="checkbox" class="form-checkbox" formControlName="hasLuggageCarrier" />
+              <label class="form-label mb-0" for="v-luggage">Possui Bagageiro Traseiro?</label>
+            </div>
+          }
+
+          @if (form.value.type === 'VAN') {
+            <div>
+              <label class="form-label" for="v-vol">Vol. Carga (m³)</label>
+              <input id="v-vol" type="number" class="form-input" formControlName="cargoVolume" placeholder="10.5" />
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+              <input id="v-iscargo" type="checkbox" class="form-checkbox" formControlName="isCargo" />
+              <label class="form-label mb-0" for="v-iscargo">Van de Carga?</label>
+            </div>
+          }
+
+          @if (form.value.type === 'TRUCK') {
+            <div>
+              <label class="form-label" for="v-loadcap">Carga Max (kg)</label>
+              <input id="v-loadcap" type="number" class="form-input" formControlName="loadCapacity" placeholder="15000" />
+            </div>
+            <div>
+              <label class="form-label" for="v-axles">Nº de Eixos</label>
+              <input id="v-axles" type="number" class="form-input" formControlName="axles" placeholder="3" />
+            </div>
+          }
+
+          @if (form.value.type === 'BUS') {
+            <div>
+              <label class="form-label" for="v-seats">Nº Assentos</label>
+              <input id="v-seats" type="number" class="form-input" formControlName="numberOfSeats" placeholder="42" />
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+              <input id="v-access" type="checkbox" class="form-checkbox" formControlName="hasAccessibility" />
+              <label class="form-label mb-0" for="v-access">Possui Acessibilidade?</label>
+            </div>
+          }
+
+          @if (form.value.type === 'BOAT') {
+            <p class="text-xs font-bold uppercase tracking-wider font-heading pt-2 col-span-2" style="color: var(--brand)">Especificações Marítimas</p>
+            <div>
+              <label class="form-label" for="v-length">Comprimento (pés)</label>
+              <input id="v-length" type="number" class="form-input" formControlName="length" placeholder="25" />
+            </div>
+            <div>
+              <label class="form-label" for="v-hull">Material do Casco</label>
+              <input id="v-hull" class="form-input" formControlName="hullMaterial" placeholder="Fibra de Vidro" />
+            </div>
+          }
+
+          <div class="col-span-2 mt-2">
+            <label class="form-label" for="v-info">Infotainment / Painel *</label>
+            <input id="v-info" class="form-input" [class.border-red-500]="isInvalid('infotainmentSystem')" formControlName="infotainmentSystem" placeholder="Ex: Android Auto" />
+            @if (isInvalid('infotainmentSystem')) { <span class="text-xs text-red-500 mt-1 block">Obrigatório</span> }
+          </div>
+          <div class="col-span-2">
+            <label class="form-label" for="v-desc">Descrição *</label>
+            <textarea id="v-desc" class="form-input" [class.border-red-500]="isInvalid('description')" formControlName="description" rows="2" placeholder="Observações..."></textarea>
+            @if (isInvalid('description')) { <span class="text-xs text-red-500 mt-1 block">A descrição é obrigatória</span> }
+          </div>
+        </div>
+      }
+    </form>
+
+  </ng-container>
+  
+  <ng-container slot="footer">
+    @if (modalStep === 1 || (modalStep === 2 && vehicle)) {
+      <button class="btn-secondary" (click)="close()">Cancelar</button>
+    } @else if (modalStep > 1) {
+      <button class="btn-secondary" (click)="prevStep()">Voltar</button>
+    }
+    
+    @if (modalStep > 1 && modalStep < maxSteps) {
+      <button class="btn-brand" (click)="nextStep()">Avançar</button>
+    } @else if (modalStep === maxSteps) {
+      <button class="btn-brand" (click)="save()" [disabled]="saving">
+        @if (saving) {
+          <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="30 60" stroke-linecap="round" />
+          </svg>
+        }
+        Finalizar
+      </button>
+    }
+  </ng-container>
+</app-modal>
