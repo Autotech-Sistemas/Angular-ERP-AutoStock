@@ -12,31 +12,14 @@
         title="Atualizar dados"
         aria-label="Atualizar lista de vendas"
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          [class.animate-spin]="loading"
-          aria-hidden="true"
-        >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.animate-spin]="loading" aria-hidden="true">
           <path d="M1 4v6h6M23 20v-6h-6" />
           <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
         </svg>
         Atualizar
       </button>
-      <button class="btn-brand" (click)="openNew()">
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          aria-hidden="true"
-        >
+      <button class="btn-brand" (click)="openNew()" [disabled]="loading">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
@@ -58,19 +41,16 @@
             <th>Desconto</th>
             <th>Valor Líquido</th>
             <th>Pagamento</th>
-            <th><span class="sr-only">Ações</span></th>
+            <th class="text-right">Ações</th>
           </tr>
         </thead>
         <tbody>
-          @if (loading) {
+          @if (loading && items.length === 0) {
             @for (i of [1, 2, 3]; track i) {
               <tr>
                 @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track j) {
                   <td>
-                    <div
-                      class="h-4 rounded animate-pulse"
-                      style="background: var(--surface-tertiary)"
-                    ></div>
+                    <div class="h-4 rounded animate-pulse" style="background: var(--surface-tertiary)"></div>
                   </td>
                 }
               </tr>
@@ -84,31 +64,48 @@
           } @else {
             @for (s of items; track s.id) {
               <tr>
-                <td>{{ fmtDate(s.saleDate) }}</td>
-                <td style="color: var(--text-primary)">{{ s.customer?.name ?? '—' }}</td>
+                <td class="font-medium" style="color: var(--text-primary)">{{ fmtDate(s.saleDate) }}</td>
+                <td>
+                  <div class="font-medium" style="color: var(--text-primary)">{{ s.customer?.name ?? '—' }}</div>
+                  <div class="text-xs" style="color: var(--text-muted)">CPF: {{ s.customer?.cpf ?? '—' }}</div>
+                </td>
                 <td>{{ s.seller?.name ?? '—' }}</td>
                 <td>
-                  {{ s.inventoryItem?.vehicle?.brand ?? '—' }}
-                  {{ s.inventoryItem?.vehicle?.model ?? '' }}
+                  <div class="font-medium" style="color: var(--text-primary)">
+                    {{ s.inventoryItem?.vehicle?.brand ?? '—' }} {{ s.inventoryItem?.vehicle?.model ?? '' }}
+                  </div>
+                  <div class="text-xs font-mono" style="color: var(--text-muted)">Placa: {{ s.inventoryItem?.licensePlate ?? 'N/A' }}</div>
                 </td>
                 <td>{{ fmtCurrency(s.grossAmount) }}</td>
                 <td style="color: var(--danger)">
                   {{ s.appliedDiscount ? '- ' + fmtCurrency(s.appliedDiscount) : '—' }}
                 </td>
-                <td class="font-semibold" style="color: #4ade80">
+                <td class="font-bold" style="color: #4ade80">
                   {{ fmtCurrency(s.netAmount ?? s.grossAmount) }}
                 </td>
                 <td>
-                  <span class="badge badge-blue text-xs">{{ s.paymentMethod ?? '—' }}</span>
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase tracking-wider"
+                        [style.backgroundColor]="getPaymentMethodConfig(s.paymentMethod).bg"
+                        [style.color]="getPaymentMethodConfig(s.paymentMethod).text">
+                    {{ getPaymentMethodConfig(s.paymentMethod).label }}
+                  </span>
                 </td>
                 <td>
-                  <button
-                    class="btn-danger"
-                    (click)="delete(s)"
-                    [attr.aria-label]="'Excluir venda de ' + (s.customer?.name ?? '')"
-                  >
-                    Excluir
-                  </button>
+                  <div class="flex justify-end gap-1.5">
+                    <button class="btn-secondary px-2" (click)="openView(s)" title="Ver Detalhes">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                    <button
+                      class="btn-danger px-3"
+                      (click)="delete(s)"
+                      [attr.aria-label]="'Excluir venda de ' + (s.customer?.name ?? '')"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </td>
               </tr>
             }
@@ -116,136 +113,217 @@
         </tbody>
       </table>
     </div>
-    <div
-      class="p-4 flex flex-wrap items-center justify-between gap-3"
-      style="border-top: 1px solid var(--surface-border)"
-    >
-      <span class="text-xs" style="color: var(--text-muted)">{{ totalElements }} venda(s)</span>
-      <app-pagination
-        [totalElements]="totalElements"
-        [pageSize]="12"
-        [currentPage]="page"
-        (pageChange)="load($event)"
-      />
+    <div class="p-4 flex flex-wrap items-center justify-between gap-3" style="border-top: 1px solid var(--surface-border)">
+      <span class="text-xs" style="color: var(--text-muted)">{{ totalElements }} venda(s) registrada(s)</span>
+      <app-pagination [totalElements]="totalElements" [pageSize]="12" [currentPage]="page" (pageChange)="load($event)" />
     </div>
   </div>
 
-  <app-modal title="Registrar Venda" [open]="modalOpen" (closeModal)="modalOpen = false">
+  <!-- Modal de Nova Venda -->
+  <app-modal title="Registrar Nova Venda" [open]="modalOpen" (closeModal)="modalOpen = false">
     <ng-container slot="body">
-      <form [formGroup]="form" class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="form-label" for="s-cust">Cliente *</label>
-          <select id="s-cust" class="form-input" formControlName="customerId">
-            @for (c of customers; track c.id) {
-              <option [value]="c.id">{{ c.name }}</option>
+      <form [formGroup]="form" class="grid grid-cols-2 gap-4" style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem;">
+        
+        <div class="col-span-2">
+          <label class="form-label" for="s-inv">Veículo no Estoque *</label>
+          <select id="s-inv" class="form-input" [class.border-red-500]="isInvalid('inventoryId')" formControlName="inventoryId" (change)="fillPrice()">
+            <option value="">Selecione um veículo disponível...</option>
+            @for (i of inventory; track i.id) {
+              <option [value]="i.id">
+                {{ i.vehicle?.brand }} {{ i.vehicle?.model }} ({{ i.vehicle?.manufactureYear }}) — Placa: {{ i.licensePlate ?? 'N/A' }}
+              </option>
             }
           </select>
+          @if (isInvalid('inventoryId')) { <span class="text-xs text-red-500 mt-1 block">O veículo é obrigatório.</span> }
         </div>
+
         <div>
-          <label class="form-label" for="s-seller">Vendedor *</label>
-          <select id="s-seller" class="form-input" formControlName="sellerId">
+          <label class="form-label" for="s-cust">Cliente Comprador *</label>
+          <select id="s-cust" class="form-input" [class.border-red-500]="isInvalid('customerId')" formControlName="customerId">
+            <option value="">Selecione o cliente...</option>
+            @for (c of customers; track c.id) {
+              <option [value]="c.id">{{ c.name }} (CPF: {{ c.cpf }})</option>
+            }
+          </select>
+          @if (isInvalid('customerId')) { <span class="text-xs text-red-500 mt-1 block">O cliente é obrigatório.</span> }
+        </div>
+
+        <div>
+          <label class="form-label" for="s-seller">Vendedor Responsável *</label>
+          <select id="s-seller" class="form-input" [class.border-red-500]="isInvalid('sellerId')" formControlName="sellerId">
+            <option value="">Selecione o vendedor...</option>
             @for (s of sellers; track s.id) {
               <option [value]="s.id">{{ s.name }}</option>
             }
           </select>
+          @if (isInvalid('sellerId')) { <span class="text-xs text-red-500 mt-1 block">O vendedor é obrigatório.</span> }
         </div>
-        <div class="col-span-2">
-          <label class="form-label" for="s-inv">Item de Estoque *</label>
-          <select
-            id="s-inv"
-            class="form-input"
-            formControlName="inventoryId"
-            (change)="fillPrice()"
-          >
-            @for (i of inventory; track i.id) {
-              <option [value]="i.id" [attr.data-price]="i.vehicle?.salePrice">
-                {{ i.vehicle?.brand }} {{ i.vehicle?.model }} — {{ i.licensePlate ?? 'sem placa' }}
-              </option>
-            }
-          </select>
-        </div>
+        
         <div>
           <label class="form-label" for="s-date">Data da Venda *</label>
-          <input id="s-date" type="date" class="form-input" formControlName="saleDate" />
+          <input id="s-date" type="date" class="form-input" [class.border-red-500]="isInvalid('saleDate')" formControlName="saleDate" />
+          @if (isInvalid('saleDate')) { <span class="text-xs text-red-500 mt-1 block">A data é obrigatória.</span> }
         </div>
+
         <div>
           <label class="form-label" for="s-pay">Forma de Pagamento *</label>
-          <select
-            id="s-pay"
-            class="form-input"
-            formControlName="paymentMethod"
-            (change)="toggleInstallments()"
-          >
-            <option value="CASH">À Vista</option>
-            <option value="CREDIT_CARD">Cartão Crédito</option>
-            <option value="DEBIT_CARD">Cartão Débito</option>
+          <select id="s-pay" class="form-input" [class.border-red-500]="isInvalid('paymentMethod')" formControlName="paymentMethod" (change)="toggleInstallments()">
+            <option value="CASH">À Vista (Dinheiro)</option>
             <option value="PIX">PIX</option>
-            <option value="BANK_TRANSFER">Transferência</option>
-            <option value="INSTALLMENTS_WITHOUT_INTEREST">Parcelado s/ Juros</option>
-            <option value="INSTALLMENTS_WITH_INTEREST">Parcelado c/ Juros</option>
-            <option value="FINANCED_BY_BANK">Financiado Banco</option>
-            <option value="FINANCED_BY_DEALERSHIP">Financiado Concessionária</option>
+            <option value="BANK_TRANSFER">Transferência Bancária</option>
+            <option value="DEBIT_CARD">Cartão de Débito</option>
+            <option value="CREDIT_CARD">Cartão de Crédito</option>
+            <option value="INSTALLMENTS_WITHOUT_INTEREST">Parcelado (Sem Juros)</option>
+            <option value="INSTALLMENTS_WITH_INTEREST">Parcelado (Com Juros)</option>
+            <option value="FINANCED_BY_BANK">Financiado (Banco)</option>
+            <option value="FINANCED_BY_DEALERSHIP">Financiado (Concessionária)</option>
+            <option value="TRADE_IN">Troca / Permuta</option>
+            <option value="OTHER">Outro</option>
           </select>
         </div>
+
         @if (showInstallments) {
           <div class="col-span-2">
-            <label class="form-label" for="s-inst">Nº Parcelas</label>
-            <input
-              id="s-inst"
-              type="number"
-              class="form-input"
-              formControlName="installmentsNumber"
-              placeholder="12"
-              min="1"
-            />
+            <label class="form-label" for="s-inst">Número de Parcelas</label>
+            <input id="s-inst" type="number" class="form-input" formControlName="installmentsNumber" placeholder="Ex: 12, 24, 48..." min="1" />
           </div>
         }
+
         <div>
           <label class="form-label" for="s-gross">Valor Bruto (R$) *</label>
-          <input
-            id="s-gross"
-            type="number"
-            class="form-input"
-            formControlName="grossAmount"
-            step="0.01"
-            (input)="calcNet()"
-          />
+          <input id="s-gross" type="number" class="form-input" [class.border-red-500]="isInvalid('grossAmount')" formControlName="grossAmount" step="0.01" (input)="calcNet()" />
+          @if (isInvalid('grossAmount')) { <span class="text-xs text-red-500 mt-1 block">O valor deve ser maior que zero.</span> }
         </div>
+
         <div>
-          <label class="form-label" for="s-disc">Desconto (R$)</label>
-          <input
-            id="s-disc"
-            type="number"
-            class="form-input"
-            formControlName="appliedDiscount"
-            step="0.01"
-            placeholder="0.00"
-            (input)="calcNet()"
-          />
+          <label class="form-label" for="s-disc">Desconto Aplicado (R$)</label>
+          <input id="s-disc" type="number" class="form-input" formControlName="appliedDiscount" step="0.01" placeholder="0.00" (input)="calcNet()" />
         </div>
-        <div class="col-span-2">
-          <label class="form-label">Valor Líquido</label>
-          <div
-            class="form-input font-heading font-bold text-lg"
-            style="color: #4ade80; background: var(--surface); cursor: default"
-          >
+
+        <div class="col-span-2 p-4 rounded bg-surface-tertiary border border-dashed" style="border-color: var(--surface-border)">
+          <label class="form-label mb-1">Valor Líquido Final</label>
+          <div class="font-heading font-bold text-3xl" style="color: #4ade80;">
             {{ netDisplay }}
           </div>
         </div>
-        <div class="col-span-2">
-          <label class="form-label" for="s-rcpt">Recibo *</label>
-          <input
-            id="s-rcpt"
-            class="form-input"
-            formControlName="receipt"
-            placeholder="Nº do recibo"
-          />
+
+        <div class="col-span-2 mt-2">
+          <label class="form-label" for="s-rcpt">Número do Recibo / Fatura *</label>
+          <input id="s-rcpt" class="form-input" [class.border-red-500]="isInvalid('receipt')" formControlName="receipt" placeholder="Ex: REC-2026-001" />
+          @if (isInvalid('receipt')) { <span class="text-xs text-red-500 mt-1 block">O recibo é obrigatório.</span> }
         </div>
       </form>
     </ng-container>
     <ng-container slot="footer">
       <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
-      <button class="btn-brand" (click)="save()">Confirmar Venda</button>
+      <button class="btn-brand" (click)="save()" [disabled]="saving">
+        @if (saving) {
+          <svg class="animate-spin w-4 h-4 mr-2 inline" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="30 60" stroke-linecap="round" />
+          </svg>
+        }
+        Confirmar Venda
+      </button>
+    </ng-container>
+  </app-modal>
+
+  <!-- Modal de Visualização (Detalhes da Venda) -->
+  <app-modal title="Detalhes da Venda" [open]="viewModalOpen" (closeModal)="viewModalOpen = false">
+    <ng-container slot="body">
+      @if (selectedSale) {
+        <div class="space-y-6" style="max-height: 65vh; overflow-y: auto; padding-right: 0.5rem;">
+          
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="text-2xl font-bold font-heading" style="color: var(--text-primary)">
+                Recibo: {{ selectedSale.receipt }}
+              </h3>
+              <p class="text-sm font-medium uppercase tracking-wider" style="color: var(--text-muted)">
+                Registrado em {{ fmtDate(selectedSale.saleDate) }}
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Card Cliente -->
+            <div class="p-4 rounded-xl border" style="background: var(--surface); border-color: var(--surface-border)">
+              <p class="text-xs uppercase font-bold tracking-wider mb-2" style="color: var(--brand)">Comprador (Cliente)</p>
+              <p class="font-medium" style="color: var(--text-primary)">{{ selectedSale.customer?.name }}</p>
+              <p class="text-sm" style="color: var(--text-muted)">CPF: {{ selectedSale.customer?.cpf }}</p>
+              <p class="text-sm" style="color: var(--text-muted)">Email: {{ selectedSale.customer?.email }}</p>
+              <p class="text-sm" style="color: var(--text-muted)">Tel: {{ selectedSale.customer?.phone }}</p>
+            </div>
+
+            <!-- Card Vendedor -->
+            <div class="p-4 rounded-xl border" style="background: var(--surface); border-color: var(--surface-border)">
+              <p class="text-xs uppercase font-bold tracking-wider mb-2" style="color: var(--brand)">Responsável (Vendedor)</p>
+              <p class="font-medium" style="color: var(--text-primary)">{{ selectedSale.seller?.name }}</p>
+              <p class="text-sm" style="color: var(--text-muted)">Email: {{ selectedSale.seller?.email }}</p>
+              <p class="text-sm" style="color: var(--text-muted)">Tel: {{ selectedSale.seller?.phone || 'N/A' }}</p>
+            </div>
+          </div>
+
+          <!-- Card Veículo -->
+          <div class="p-4 rounded-xl" style="background: var(--surface-tertiary)">
+            <p class="text-xs uppercase font-bold tracking-wider mb-2" style="color: var(--text-muted)">Veículo Vendido</p>
+            <p class="text-lg font-bold" style="color: var(--text-primary)">
+              {{ selectedSale.inventoryItem?.vehicle?.brand }} {{ selectedSale.inventoryItem?.vehicle?.model }} ({{ selectedSale.inventoryItem?.vehicle?.manufactureYear ? selectedSale.inventoryItem?.vehicle?.manufactureYear?.toString()?.substring(0, 4) : '—' }})
+            </p>
+            <div class="flex gap-4 mt-2 text-sm">
+              <p><span style="color: var(--text-muted)">Chassi:</span> <span class="font-mono">{{ selectedSale.inventoryItem?.chassis || 'N/A' }}</span></p>
+              <p><span style="color: var(--text-muted)">Placa:</span> <span class="font-mono">{{ selectedSale.inventoryItem?.licensePlate || 'N/A' }}</span></p>
+            </div>
+          </div>
+
+          <!-- Finanças -->
+          <div>
+            <h4 class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider" style="color: var(--brand); border-color: var(--surface-border)">
+              Resumo Financeiro
+            </h4>
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between items-center">
+                <span style="color: var(--text-muted)">Valor Bruto do Veículo</span>
+                <span class="font-medium" style="color: var(--text-primary)">{{ fmtCurrency(selectedSale.grossAmount) }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span style="color: var(--text-muted)">Desconto Concedido</span>
+                <span class="font-medium" style="color: var(--danger)">{{ selectedSale.appliedDiscount ? '- ' + fmtCurrency(selectedSale.appliedDiscount) : 'R$ 0,00' }}</span>
+              </div>
+              <div class="flex justify-between items-center pt-3 border-t border-dashed" style="border-color: var(--surface-border)">
+                <span class="font-bold uppercase tracking-wider text-xs" style="color: var(--text-primary)">Valor Líquido Recebido</span>
+                <span class="font-bold text-lg" style="color: #4ade80">{{ fmtCurrency(selectedSale.netAmount ?? selectedSale.grossAmount) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagamento -->
+          <div>
+            <h4 class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider" style="color: var(--brand); border-color: var(--surface-border)">
+              Condições de Pagamento
+            </h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="block text-xs mb-1" style="color: var(--text-muted)">Método</span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider"
+                      [style.backgroundColor]="getPaymentMethodConfig(selectedSale.paymentMethod).bg"
+                      [style.color]="getPaymentMethodConfig(selectedSale.paymentMethod).text">
+                  {{ getPaymentMethodConfig(selectedSale.paymentMethod).label }}
+                </span>
+              </div>
+              @if (selectedSale.installmentsNumber) {
+                <div>
+                  <span class="block text-xs mb-1" style="color: var(--text-muted)">Parcelamento</span>
+                  <span class="font-medium" style="color: var(--text-primary)">Em {{ selectedSale.installmentsNumber }}x vezes</span>
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+      }
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-brand w-full justify-center py-2" (click)="viewModalOpen = false">Fechar Recibo</button>
     </ng-container>
   </app-modal>
 </div>
