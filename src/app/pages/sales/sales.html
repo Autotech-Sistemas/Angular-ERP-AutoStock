@@ -9,7 +9,6 @@
         class="btn-secondary"
         (click)="refresh()"
         [disabled]="loading"
-        title="Atualizar dados"
         aria-label="Atualizar lista de vendas"
       >
         <svg
@@ -51,6 +50,7 @@
         <thead>
           <tr>
             <th>Data</th>
+            <th>Recibo</th>
             <th>Cliente</th>
             <th>Vendedor</th>
             <th>Veículo</th>
@@ -58,6 +58,7 @@
             <th>Desconto</th>
             <th>Valor Líquido</th>
             <th>Pagamento</th>
+            <th>Parcelas</th>
             <th class="text-right">Ações</th>
           </tr>
         </thead>
@@ -65,7 +66,7 @@
           @if (loading && items.length === 0) {
             @for (i of [1, 2, 3]; track i) {
               <tr>
-                @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track j) {
+                @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]; track j) {
                   <td>
                     <div
                       class="h-4 rounded animate-pulse"
@@ -77,7 +78,7 @@
             }
           } @else if (items.length === 0) {
             <tr>
-              <td colspan="9" class="text-center py-10 text-sm" style="color: var(--text-muted)">
+              <td colspan="11" class="text-center py-10 text-sm" style="color: var(--text-muted)">
                 Nenhuma venda registrada
               </td>
             </tr>
@@ -87,6 +88,13 @@
                 <td class="font-medium" style="color: var(--text-primary)">
                   {{ fmtDate(s.saleDate) }}
                 </td>
+
+                <!-- Recibo -->
+                <td class="font-mono text-xs" style="color: var(--text-muted)">
+                  {{ s.receipt ?? '—' }}
+                </td>
+
+                <!-- Cliente -->
                 <td>
                   <div class="font-medium" style="color: var(--text-primary)">
                     {{ s.customer?.name ?? '—' }}
@@ -95,23 +103,31 @@
                     CPF: {{ s.customer?.cpf ?? '—' }}
                   </div>
                 </td>
+
                 <td>{{ s.seller?.name ?? '—' }}</td>
+
+                <!-- Veículo -->
                 <td>
                   <div class="font-medium" style="color: var(--text-primary)">
                     {{ s.inventoryItem?.vehicle?.brand ?? '—' }}
                     {{ s.inventoryItem?.vehicle?.model ?? '' }}
                   </div>
                   <div class="text-xs font-mono" style="color: var(--text-muted)">
-                    Placa: {{ s.inventoryItem?.licensePlate ?? 'N/A' }}
+                    {{ s.inventoryItem?.licensePlate ?? 'N/A' }}
                   </div>
                 </td>
+
                 <td>{{ fmtCurrency(s.grossAmount) }}</td>
+
                 <td style="color: var(--danger)">
                   {{ s.appliedDiscount ? '- ' + fmtCurrency(s.appliedDiscount) : '—' }}
                 </td>
+
                 <td class="font-bold" style="color: #4ade80">
                   {{ fmtCurrency(s.netAmount ?? s.grossAmount) }}
                 </td>
+
+                <!-- Pagamento -->
                 <td>
                   <span
                     class="inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase tracking-wider"
@@ -121,9 +137,16 @@
                     {{ getPaymentMethodConfig(s.paymentMethod).label }}
                   </span>
                 </td>
+
+                <!-- Parcelas -->
+                <td class="text-xs font-mono" style="color: var(--text-muted)">
+                  {{ s.installmentsNumber ? s.installmentsNumber + 'x' : '—' }}
+                </td>
+
+                <!-- Ações -->
                 <td>
                   <div class="flex justify-end gap-1.5">
-                    <button class="btn-secondary px-2" (click)="openView(s)" title="Ver Detalhes">
+                    <button class="btn-secondary px-2" (click)="openView(s)" title="Ver detalhes">
                       <svg
                         width="14"
                         height="14"
@@ -136,6 +159,7 @@
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                     </button>
+                    <button class="btn-edit px-3" (click)="openEdit(s)">Editar</button>
                     <button
                       class="btn-danger px-3"
                       (click)="delete(s)"
@@ -252,7 +276,6 @@
           <select
             id="s-pay"
             class="form-input"
-            [class.border-red-500]="isInvalid('paymentMethod')"
             formControlName="paymentMethod"
             (change)="toggleInstallments()"
           >
@@ -314,16 +337,14 @@
         </div>
 
         <div
-          class="col-span-2 p-4 rounded bg-surface-tertiary border border-dashed"
-          style="border-color: var(--surface-border)"
+          class="col-span-2 p-4 rounded"
+          style="background: var(--surface-tertiary); border: 1px dashed var(--surface-border)"
         >
           <label class="form-label mb-1">Valor Líquido Final</label>
-          <div class="font-heading font-bold text-3xl" style="color: #4ade80">
-            {{ netDisplay }}
-          </div>
+          <div class="font-heading font-bold text-3xl" style="color: #4ade80">{{ netDisplay }}</div>
         </div>
 
-        <div class="col-span-2 mt-2">
+        <div class="col-span-2">
           <label class="form-label" for="s-rcpt">Número do Recibo / Fatura *</label>
           <input
             id="s-rcpt"
@@ -359,15 +380,131 @@
     </ng-container>
   </app-modal>
 
-  <!-- Modal de Visualização (Detalhes da Venda) -->
+  <!-- Modal de Edição -->
+  <app-modal title="Editar Venda" [open]="editModalOpen" (closeModal)="editModalOpen = false">
+    <ng-container slot="body">
+      @if (selectedSale) {
+        <form
+          [formGroup]="editForm"
+          class="grid grid-cols-2 gap-4"
+          style="max-height: 55vh; overflow-y: auto; padding-right: 0.5rem"
+        >
+          <div class="col-span-2 p-3 rounded-lg" style="background: var(--surface-tertiary)">
+            <p
+              class="text-xs font-medium uppercase tracking-wider mb-1"
+              style="color: var(--text-muted)"
+            >
+              Venda
+            </p>
+            <p class="font-semibold" style="color: var(--text-primary)">
+              {{ selectedSale.inventoryItem?.vehicle?.brand }}
+              {{ selectedSale.inventoryItem?.vehicle?.model }}
+            </p>
+            <p class="text-xs font-mono" style="color: var(--text-muted)">
+              Recibo: {{ selectedSale.receipt }}
+            </p>
+          </div>
+
+          <div class="col-span-2">
+            <label class="form-label" for="e-cust">Cliente Comprador</label>
+            <select id="e-cust" class="form-input" formControlName="customerId">
+              <option value="">Manter cliente atual ({{ selectedSale.customer?.name }})</option>
+              @for (c of customers; track c.id) {
+                <option [value]="c.id">{{ c.name }} (CPF: {{ c.cpf }})</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label" for="e-pay">Forma de Pagamento *</label>
+            <select
+              id="e-pay"
+              class="form-input"
+              [class.border-red-500]="isInvalidEdit('paymentMethod')"
+              formControlName="paymentMethod"
+            >
+              <option value="CASH">À Vista (Dinheiro)</option>
+              <option value="PIX">PIX</option>
+              <option value="BANK_TRANSFER">Transferência Bancária</option>
+              <option value="DEBIT_CARD">Cartão de Débito</option>
+              <option value="CREDIT_CARD">Cartão de Crédito</option>
+              <option value="INSTALLMENTS_WITHOUT_INTEREST">Parcelado (Sem Juros)</option>
+              <option value="INSTALLMENTS_WITH_INTEREST">Parcelado (Com Juros)</option>
+              <option value="FINANCED_BY_BANK">Financiado (Banco)</option>
+              <option value="FINANCED_BY_DEALERSHIP">Financiado (Concessionária)</option>
+              <option value="TRADE_IN">Troca / Permuta</option>
+              <option value="OTHER">Outro</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="form-label" for="e-inst">Número de Parcelas</label>
+            <input
+              id="e-inst"
+              type="number"
+              class="form-input"
+              formControlName="installmentsNumber"
+              placeholder="—"
+              min="1"
+            />
+          </div>
+
+          <div>
+            <label class="form-label" for="e-disc">Desconto Aplicado (R$)</label>
+            <input
+              id="e-disc"
+              type="number"
+              class="form-input"
+              formControlName="appliedDiscount"
+              step="0.01"
+              (input)="calcEditNet()"
+            />
+          </div>
+
+          <div>
+            <label class="form-label" for="e-net">Valor Líquido (R$)</label>
+            <input
+              id="e-net"
+              type="number"
+              class="form-input"
+              formControlName="netAmount"
+              step="0.01"
+            />
+          </div>
+        </form>
+      }
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="editModalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="saveEdit()" [disabled]="saving">
+        @if (saving) {
+          <svg class="animate-spin w-4 h-4 mr-2 inline" viewBox="0 0 24 24" fill="none">
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-dasharray="30 60"
+              stroke-linecap="round"
+            />
+          </svg>
+        }
+        Salvar Alterações
+      </button>
+    </ng-container>
+  </app-modal>
+
+  <!-- Modal de Visualização -->
   <app-modal title="Detalhes da Venda" [open]="viewModalOpen" (closeModal)="viewModalOpen = false">
     <ng-container slot="body">
       @if (selectedSale) {
         <div class="space-y-6" style="max-height: 65vh; overflow-y: auto; padding-right: 0.5rem">
+          <!-- Header com recibo -->
           <div class="flex items-start justify-between">
             <div>
               <h3 class="text-2xl font-bold font-heading" style="color: var(--text-primary)">
-                Recibo: {{ selectedSale.receipt }}
+                {{ selectedSale.receipt }}
               </h3>
               <p
                 class="text-sm font-medium uppercase tracking-wider"
@@ -375,11 +512,37 @@
               >
                 Registrado em {{ fmtDate(selectedSale.saleDate) }}
               </p>
+              @if (selectedSale.invoice) {
+                <p class="text-xs font-mono mt-1" style="color: var(--text-muted)">
+                  Nota Fiscal: {{ selectedSale.invoice }}
+                </p>
+              }
             </div>
           </div>
 
+          <!-- Imagem do veículo -->
+          @if (
+            selectedSale.inventoryItem?.vehicle?.images &&
+            selectedSale.inventoryItem!.vehicle!.images!.length > 0
+          ) {
+            <div
+              class="rounded-xl overflow-hidden"
+              style="aspect-ratio: 16/7; border: 1px solid var(--surface-border)"
+            >
+              <img
+                [src]="selectedSale.inventoryItem!.vehicle!.images![0].downloadUri"
+                [alt]="
+                  selectedSale.inventoryItem?.vehicle?.brand +
+                  ' ' +
+                  selectedSale.inventoryItem?.vehicle?.model
+                "
+                style="width: 100%; height: 100%; object-fit: cover"
+              />
+            </div>
+          }
+
+          <!-- Cards cliente e vendedor -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Card Cliente -->
             <div
               class="p-4 rounded-xl border"
               style="background: var(--surface); border-color: var(--surface-border)"
@@ -403,8 +566,6 @@
                 Tel: {{ selectedSale.customer?.phone }}
               </p>
             </div>
-
-            <!-- Card Vendedor -->
             <div
               class="p-4 rounded-xl border"
               style="background: var(--surface); border-color: var(--surface-border)"
@@ -427,7 +588,7 @@
             </div>
           </div>
 
-          <!-- Card Veículo -->
+          <!-- Veículo vendido -->
           <div class="p-4 rounded-xl" style="background: var(--surface-tertiary)">
             <p
               class="text-xs uppercase font-bold tracking-wider mb-2"
@@ -437,29 +598,27 @@
             </p>
             <p class="text-lg font-bold" style="color: var(--text-primary)">
               {{ selectedSale.inventoryItem?.vehicle?.brand }}
-              {{ selectedSale.inventoryItem?.vehicle?.model }} ({{
-                selectedSale.inventoryItem?.vehicle?.manufactureYear
-                  ? selectedSale.inventoryItem?.vehicle?.manufactureYear
-                      ?.toString()
-                      ?.substring(0, 4)
-                  : '—'
+              {{ selectedSale.inventoryItem?.vehicle?.model }}
+              ({{
+                selectedSale.inventoryItem?.vehicle?.manufactureYear?.toString()?.substring(0, 4) ??
+                  '—'
               }})
             </p>
             <div class="flex gap-4 mt-2 text-sm">
               <p>
-                <span style="color: var(--text-muted)">Chassi:</span>
-                <span class="font-mono">{{ selectedSale.inventoryItem?.chassis || 'N/A' }}</span>
+                <span style="color: var(--text-muted)">Chassi: </span
+                ><span class="font-mono">{{ selectedSale.inventoryItem?.chassis || 'N/A' }}</span>
               </p>
               <p>
-                <span style="color: var(--text-muted)">Placa:</span>
-                <span class="font-mono">{{
+                <span style="color: var(--text-muted)">Placa: </span
+                ><span class="font-mono">{{
                   selectedSale.inventoryItem?.licensePlate || 'N/A'
                 }}</span>
               </p>
             </div>
           </div>
 
-          <!-- Finanças -->
+          <!-- Resumo financeiro -->
           <div>
             <h4
               class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider"
@@ -498,7 +657,7 @@
             </div>
           </div>
 
-          <!-- Pagamento -->
+          <!-- Condições de pagamento -->
           <div>
             <h4
               class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider"
@@ -533,9 +692,10 @@
       }
     </ng-container>
     <ng-container slot="footer">
-      <button class="btn-brand w-full justify-center py-2" (click)="viewModalOpen = false">
-        Fechar Recibo
+      <button class="btn-secondary" (click)="openEdit(selectedSale!); viewModalOpen = false">
+        Editar Venda
       </button>
+      <button class="btn-brand" (click)="viewModalOpen = false">Fechar Recibo</button>
     </ng-container>
   </app-modal>
 </div>

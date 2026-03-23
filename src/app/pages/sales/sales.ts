@@ -20,6 +20,7 @@ import { SaleService } from '../../services/sale.service';
 import { SellerService } from '../../services/seller.service';
 import {
   SaleRequest,
+  SalePatchRequest,
   SaleResponseDTO,
   CustomerResponseDTO,
   SellerResponseDTO,
@@ -47,6 +48,7 @@ export class Sales implements OnInit {
   loading = false;
   saving = false;
   modalOpen = false;
+  editModalOpen = false;
   viewModalOpen = false;
   showInstallments = false;
 
@@ -63,7 +65,6 @@ export class Sales implements OnInit {
 
   fmtCurrency = (v: number | undefined) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
-
   fmtDate = formatDate;
 
   form = this.fb.group({
@@ -76,6 +77,14 @@ export class Sales implements OnInit {
     grossAmount: [0, [Validators.required, Validators.min(0.01)]],
     appliedDiscount: [0],
     receipt: ['', Validators.required],
+  });
+
+  editForm = this.fb.group({
+    paymentMethod: ['', Validators.required],
+    installmentsNumber: [null as number | null],
+    appliedDiscount: [0],
+    netAmount: [0],
+    customerId: [''],
   });
 
   ngOnInit(): void {
@@ -153,9 +162,27 @@ export class Sales implements OnInit {
     return !!control && control.invalid && (control.dirty || control.touched);
   }
 
+  isInvalidEdit(controlName: string): boolean {
+    const control = this.editForm.get(controlName);
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
   openView(sale: SaleResponseDTO): void {
     this.selectedSale = sale;
     this.viewModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  openEdit(sale: SaleResponseDTO): void {
+    this.selectedSale = sale;
+    this.editForm.reset({
+      paymentMethod: sale.paymentMethod ?? 'CASH',
+      installmentsNumber: sale.installmentsNumber ?? null,
+      appliedDiscount: sale.appliedDiscount ?? 0,
+      netAmount: sale.netAmount ?? sale.grossAmount ?? 0,
+      customerId: sale.customer?.id ?? '',
+    });
+    this.editModalOpen = true;
     this.cdr.markForCheck();
   }
 
@@ -215,6 +242,13 @@ export class Sales implements OnInit {
     this.cdr.markForCheck();
   }
 
+  calcEditNet(): void {
+    const gross = this.selectedSale?.grossAmount ?? 0;
+    const disc = this.editForm.value.appliedDiscount ?? 0;
+    this.editForm.patchValue({ netAmount: gross - disc }, { emitEvent: false });
+    this.cdr.markForCheck();
+  }
+
   toggleInstallments(): void {
     const v = this.form.value.paymentMethod ?? '';
     this.showInstallments = v.includes('INSTALLMENT') || v.includes('FINANCED');
@@ -270,6 +304,38 @@ export class Sales implements OnInit {
         } else {
           this.toast.error(errorMsg || 'Erro ao registrar venda');
         }
+        this.saving = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  saveEdit(): void {
+    if (!this.selectedSale?.id) return;
+
+    this.saving = true;
+    this.cdr.markForCheck();
+
+    const v = this.editForm.value;
+
+    const body: SalePatchRequest = {
+      paymentMethod: v.paymentMethod ?? undefined,
+      appliedDiscount: v.appliedDiscount ?? undefined,
+      netAmount: v.netAmount ?? undefined,
+      installmentsNumber: v.installmentsNumber ?? undefined,
+      customerId: v.customerId || undefined,
+    };
+
+    this.svc.update(this.selectedSale.id, body).subscribe({
+      next: () => {
+        this.toast.success('Venda atualizada!');
+        this.editModalOpen = false;
+        this.saving = false;
+        this.invalidateAllPages();
+        this.load(this.page, true);
+      },
+      error: (e) => {
+        this.toast.error(e?.error?.message || e?.message || 'Erro ao atualizar');
         this.saving = false;
         this.cdr.markForCheck();
       },
