@@ -5,13 +5,7 @@
       <p class="page-subtitle">Cadastro e gerenciamento do catálogo</p>
     </div>
     <div class="flex items-center gap-2">
-      <button
-        class="btn-secondary"
-        (click)="refresh()"
-        [disabled]="loading"
-        title="Atualizar dados"
-        aria-label="Atualizar lista de veículos"
-      >
+      <button class="btn-secondary" (click)="refresh()" [disabled]="loading" aria-label="Atualizar lista de veículos">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.animate-spin]="loading" aria-hidden="true">
           <path d="M1 4v6h6M23 20v-6h-6" />
           <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
@@ -35,14 +29,7 @@
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <input
-          type="search"
-          class="form-input pl-9 w-64"
-          placeholder="Buscar veículo..."
-          [(ngModel)]="searchQuery"
-          (input)="onSearch()"
-          aria-label="Buscar veículo"
-        />
+        <input type="search" class="form-input pl-9 w-64" placeholder="Buscar veículo..." [(ngModel)]="searchQuery" (input)="onSearch()" aria-label="Buscar veículo" />
       </div>
       <select class="form-input w-auto text-sm" [(ngModel)]="typeFilter" (change)="onSearch()" aria-label="Filtrar por tipo">
         <option value="">Todos os tipos</option>
@@ -76,30 +63,26 @@
         </thead>
         <tbody>
           @if (loading) {
-            @for (i of [1, 2, 3, 4, 5]; track i) {
+            @for (i of [1,2,3,4,5]; track i) {
               <tr>
-                @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; track j) {
-                  <td>
-                    <div class="h-4 rounded animate-pulse" style="background: var(--surface-tertiary)"></div>
-                  </td>
+                @for (j of [1,2,3,4,5,6,7,8,9,10,11,12]; track j) {
+                  <td><div class="h-4 rounded animate-pulse" style="background: var(--surface-tertiary)"></div></td>
                 }
               </tr>
             }
           } @else if (filtered.length === 0) {
             <tr>
-              <td colspan="12" class="text-center py-10 text-sm" style="color: var(--text-muted)">
-                Nenhum veículo encontrado
-              </td>
+              <td colspan="12" class="text-center py-10 text-sm" style="color: var(--text-muted)">Nenhum veículo encontrado</td>
             </tr>
           } @else {
             @for (v of filtered; track v.id) {
               <tr>
 
-                <!-- Imagem -->
+                <!-- Foto -->
                 <td>
-                  @if (v.images && v.images.length > 0) {
+                  @if (v.images && v.images.length > 0 && getImageUrl(v.images[0])) {
                     <img
-                      [src]="v.images[0].downloadUri"
+                      [src]="getImageUrl(v.images[0])"
                       [alt]="v.brand + ' ' + v.model"
                       style="width: 56px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--surface-border); cursor: pointer;"
                       (click)="openImages(v)"
@@ -130,22 +113,16 @@
 
                 <!-- Tipo -->
                 <td>
-                  <span
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"
                     [style.backgroundColor]="getTypeConfig(v.type).bg"
-                    [style.color]="getTypeConfig(v.type).text"
-                  >
+                    [style.color]="getTypeConfig(v.type).text">
                     {{ getTypeConfig(v.type).icon }} {{ getTypeConfig(v.type).label }}
                   </span>
                 </td>
 
-                <!-- Ano -->
                 <td class="font-mono text-xs">{{ getYear(v.manufactureYear) }}</td>
-
-                <!-- Combustível -->
                 <td class="text-sm">{{ fuelLabel(v.fuelType) }}</td>
 
-                <!-- Transmissão -->
                 <td class="text-xs" style="color: var(--text-muted)">
                   @switch (v.transmissionType) {
                     @case ('MANUAL') { Manual }
@@ -157,55 +134,41 @@
                   }
                 </td>
 
-                <!-- Km -->
                 <td class="font-mono text-xs">{{ fmtMileage(v.mileage) }}</td>
 
-                <!-- Filial -->
                 <td class="text-sm">
                   <div style="color: var(--text-primary)">{{ v.branch?.name ?? '—' }}</div>
                   <div class="text-xs" style="color: var(--text-muted)">{{ v.branch?.address?.city ?? '' }}</div>
                 </td>
 
-                <!-- Preço -->
                 <td class="font-semibold" style="color: #4ade80">{{ fmtCurrency(v.salePrice) }}</td>
 
-                <!-- Status -->
                 <td>
-                  <span class="badge" [class]="vehicleStatusClass(v.status)">
-                    {{ vehicleStatusLabel(v.status) }}
-                  </span>
+                  <span class="badge" [class]="vehicleStatusClass(v.status)">{{ vehicleStatusLabel(v.status) }}</span>
                 </td>
 
-                <!-- Disponibilidade -->
                 <td>
-                  <span class="badge" [class]="availClass(v.availability)">
-                    {{ availLabel(v.availability) }}
-                  </span>
+                  <span class="badge" [class]="availClass(v.availability)">{{ availLabel(v.availability) }}</span>
                 </td>
 
                 <!-- Ações -->
                 <td>
                   <div class="flex justify-end gap-1.5">
-                    <button
-                      class="btn-secondary px-2"
-                      (click)="openImages(v)"
-                      title="Gerenciar imagens"
-                      [attr.aria-label]="'Gerenciar imagens de ' + v.brand + ' ' + v.model"
-                    >
+                    <button class="btn-secondary px-2" (click)="openImages(v)" title="Gerenciar imagens">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="3" width="18" height="18" rx="2" />
                         <circle cx="8.5" cy="8.5" r="1.5" />
                         <polyline points="21 15 16 10 5 21" />
                       </svg>
                     </button>
-                    <button class="btn-secondary px-2" (click)="openView(v)" title="Ver detalhes" [attr.aria-label]="'Ver detalhes de ' + v.brand + ' ' + v.model">
+                    <button class="btn-secondary px-2" (click)="openView(v)" title="Ver detalhes">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                     </button>
                     <button class="btn-edit px-3" (click)="openEdit(v)">Editar</button>
-                    <button class="btn-danger px-3" (click)="delete(v)" [attr.aria-label]="'Excluir ' + v.brand + ' ' + v.model">Excluir</button>
+                    <button class="btn-danger px-3" (click)="delete(v)">Excluir</button>
                   </div>
                 </td>
 
@@ -218,32 +181,11 @@
 
     <div class="p-4 flex flex-wrap items-center justify-between gap-3" style="border-top: 1px solid var(--surface-border)">
       <span class="text-xs" style="color: var(--text-muted)">{{ totalElements }} veículo(s) encontrado(s)</span>
-      <app-pagination
-        [totalElements]="totalElements"
-        [pageSize]="12"
-        [currentPage]="page"
-        (pageChange)="onPage($event)"
-      />
+      <app-pagination [totalElements]="totalElements" [pageSize]="12" [currentPage]="page" (pageChange)="onPage($event)" />
     </div>
   </div>
 
-  <app-vehicle-form
-    [isOpen]="modalOpen"
-    [vehicle]="selectedVehicle"
-    (closed)="modalOpen = false"
-    (saved)="onSaved()"
-  ></app-vehicle-form>
-
-  <app-vehicle-view
-    [isOpen]="viewModalOpen"
-    [vehicle]="viewVehicle"
-    (closed)="viewModalOpen = false"
-  ></app-vehicle-view>
-
-  <app-vehicle-images-modal
-    [isOpen]="imagesModalOpen"
-    [vehicle]="imagesVehicle"
-    (closed)="imagesModalOpen = false"
-    (imagesUpdated)="onImagesUpdated($event)"
-  ></app-vehicle-images-modal>
+  <app-vehicle-form [isOpen]="modalOpen" [vehicle]="selectedVehicle" (closed)="modalOpen = false" (saved)="onSaved()"></app-vehicle-form>
+  <app-vehicle-view [isOpen]="viewModalOpen" [vehicle]="viewVehicle" (closed)="viewModalOpen = false"></app-vehicle-view>
+  <app-vehicle-images-modal [isOpen]="imagesModalOpen" [vehicle]="imagesVehicle" (closed)="imagesModalOpen = false" (imagesUpdated)="onImagesUpdated($event)"></app-vehicle-images-modal>
 </div>

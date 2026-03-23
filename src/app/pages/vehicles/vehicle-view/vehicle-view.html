@@ -2,15 +2,14 @@
   <ng-container slot="body">
     @if (vehicle) {
       <div class="space-y-6" style="max-height: 65vh; overflow-y: auto; padding-right: 0.5rem">
+
+        <!-- Header -->
         <div class="flex items-start justify-between">
           <div>
             <h3 class="text-2xl font-bold font-heading" style="color: var(--text-primary)">
               {{ vehicle.brand }} {{ vehicle.model }}
             </h3>
-            <p
-              class="text-sm font-medium uppercase tracking-wider"
-              style="color: var(--text-muted)"
-            >
+            <p class="text-sm font-medium uppercase tracking-wider" style="color: var(--text-muted)">
               {{ vehicle.category }} • {{ getYear(vehicle.manufactureYear) }}
             </p>
           </div>
@@ -19,39 +18,74 @@
           </span>
         </div>
 
-        <div
-          class="grid grid-cols-2 gap-4 p-4 rounded-xl"
-          style="background: var(--surface-tertiary)"
-        >
+        <!-- Galeria de imagens -->
+        @if (vehicle.images && vehicle.images.length > 0) {
           <div>
-            <p
-              class="text-xs uppercase font-bold tracking-wider mb-1"
-              style="color: var(--text-muted)"
-            >
-              Preço de Venda
-            </p>
-            <p class="text-xl font-bold" style="color: #4ade80">
-              {{ fmtCurrency(vehicle.salePrice) }}
-            </p>
+            @if (vehicle.images.length === 1) {
+              <div class="rounded-xl overflow-hidden" style="aspect-ratio: 16/7; border: 1px solid var(--surface-border)">
+                <img
+                  [src]="getImageUrl(vehicle.images[0])"
+                  [alt]="vehicle.brand + ' ' + vehicle.model"
+                  style="width: 100%; height: 100%; object-fit: cover;"
+                />
+              </div>
+            } @else {
+              <div class="grid gap-2" [style.grid-template-columns]="vehicle.images.length >= 3 ? '2fr 1fr' : '1fr 1fr'">
+                <!-- Imagem principal -->
+                <div class="rounded-xl overflow-hidden" style="aspect-ratio: 4/3; border: 1px solid var(--surface-border)">
+                  <img
+                    [src]="getImageUrl(vehicle.images[0])"
+                    [alt]="vehicle.brand + ' ' + vehicle.model"
+                    style="width: 100%; height: 100%; object-fit: cover;"
+                  />
+                </div>
+                <!-- Miniaturas -->
+                <div class="flex flex-col gap-2">
+                  @for (img of vehicle.images.slice(1, 3); track img.id ?? img.name; let i = $index) {
+                    <div
+                      class="rounded-xl overflow-hidden flex-1 relative"
+                      style="border: 1px solid var(--surface-border); min-height: 0;"
+                    >
+                      <img
+                        [src]="getImageUrl(img)"
+                        [alt]="vehicle.brand + ' ' + vehicle.model"
+                        style="width: 100%; height: 100%; object-fit: cover;"
+                      />
+                      @if (i === 1 && vehicle.images && vehicle.images.length > 3) {
+                        <div
+                          class="absolute inset-0 flex items-center justify-center"
+                          style="background: rgba(0,0,0,0.55)"
+                        >
+                          <span class="font-bold text-lg" style="color: white">
+                            +{{ vehicle.images.length - 3 }}
+                          </span>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Preço e disponibilidade -->
+        <div class="grid grid-cols-2 gap-4 p-4 rounded-xl" style="background: var(--surface-tertiary)">
+          <div>
+            <p class="text-xs uppercase font-bold tracking-wider mb-1" style="color: var(--text-muted)">Preço de Venda</p>
+            <p class="text-xl font-bold" style="color: #4ade80">{{ fmtCurrency(vehicle.salePrice) }}</p>
           </div>
           <div>
-            <p
-              class="text-xs uppercase font-bold tracking-wider mb-1"
-              style="color: var(--text-muted)"
-            >
-              Disponibilidade
-            </p>
+            <p class="text-xs uppercase font-bold tracking-wider mb-1" style="color: var(--text-muted)">Disponibilidade</p>
             <span class="badge" [class]="availClass(vehicle.availability ?? '')">
               {{ availLabel(vehicle.availability ?? '') }}
             </span>
           </div>
         </div>
 
+        <!-- Especificações básicas -->
         <div>
-          <h4
-            class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider"
-            style="color: var(--brand); border-color: var(--surface-border)"
-          >
+          <h4 class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider" style="color: var(--brand); border-color: var(--surface-border)">
             Especificações Básicas
           </h4>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-2 text-sm">
@@ -66,306 +100,116 @@
                 {{ getTypeConfig(vehicle.type).label }}
               </span>
             </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Cor</span
-              ><span class="font-medium" style="color: var(--text-primary)">{{
-                vehicle.color
-              }}</span>
-            </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Quilometragem</span
-              ><span class="font-medium" style="color: var(--text-primary)">{{
-                fmtMileage(vehicle.mileage)
-              }}</span>
-            </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Combustível</span
-              ><span class="font-medium" style="color: var(--text-primary)">{{
-                fuelLabel(vehicle.fuelType)
-              }}</span>
-            </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Peso</span
-              ><span class="font-medium" style="color: var(--text-primary)"
-                >{{ vehicle.weight }} kg</span
-              >
-            </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Tanque</span
-              ><span class="font-medium" style="color: var(--text-primary)"
-                >{{ vehicle.fuelTankCapacity }} L</span
-              >
-            </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Potência</span
-              ><span class="font-medium" style="color: var(--text-primary)"
-                >{{ vehicle.enginePower }} cv</span
-              >
-            </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Cilindros</span
-              ><span class="font-medium" style="color: var(--text-primary)">{{
-                vehicle.numberOfCylinders
-              }}</span>
-            </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Passageiros</span
-              ><span class="font-medium" style="color: var(--text-primary)">{{
-                vehicle.passengerCapacity
-              }}</span>
-            </div>
+            <div><span class="block text-xs mb-1" style="color: var(--text-muted)">Cor</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.color }}</span></div>
+            <div><span class="block text-xs mb-1" style="color: var(--text-muted)">Quilometragem</span><span class="font-medium" style="color: var(--text-primary)">{{ fmtMileage(vehicle.mileage) }}</span></div>
+            <div><span class="block text-xs mb-1" style="color: var(--text-muted)">Combustível</span><span class="font-medium" style="color: var(--text-primary)">{{ fuelLabel(vehicle.fuelType) }}</span></div>
+            <div><span class="block text-xs mb-1" style="color: var(--text-muted)">Peso</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.weight }} kg</span></div>
+            <div><span class="block text-xs mb-1" style="color: var(--text-muted)">Tanque</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.fuelTankCapacity }} L</span></div>
+            <div><span class="block text-xs mb-1" style="color: var(--text-muted)">Potência</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.enginePower }} cv</span></div>
+            <div><span class="block text-xs mb-1" style="color: var(--text-muted)">Cilindros</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.numberOfCylinders }}</span></div>
+            <div><span class="block text-xs mb-1" style="color: var(--text-muted)">Passageiros</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.passengerCapacity }}</span></div>
           </div>
         </div>
 
+        <!-- Especificações terrestres -->
         @if (['CAR', 'MOTORCYCLE', 'TRUCK', 'VAN', 'BUS'].includes(vehicle.type)) {
           <div>
-            <h4
-              class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider"
-              style="color: var(--brand); border-color: var(--surface-border)"
-            >
+            <h4 class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider" style="color: var(--brand); border-color: var(--surface-border)">
               Especificações Terrestres
             </h4>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-2 text-sm">
               @if (vehicle.transmissionType) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Transmissão</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.transmissionType
-                  }}</span>
-                </div>
+                <div><span class="block text-xs" style="color: var(--text-muted)">Transmissão</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.transmissionType }}</span></div>
               }
               @if (vehicle.numberOfGears) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Marchas</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.numberOfGears
-                  }}</span>
-                </div>
+                <div><span class="block text-xs" style="color: var(--text-muted)">Marchas</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.numberOfGears }}</span></div>
               }
               @if (vehicle.steeringType) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Direção</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.steeringType
-                  }}</span>
-                </div>
+                <div><span class="block text-xs" style="color: var(--text-muted)">Direção</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.steeringType }}</span></div>
               }
               @if (vehicle.brakeType) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Freios</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.brakeType
-                  }}</span>
-                </div>
+                <div><span class="block text-xs" style="color: var(--text-muted)">Freios</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.brakeType }}</span></div>
               }
               @if (vehicle.groundClearance) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Alt. Solo</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >{{ vehicle.groundClearance }} mm</span
-                  >
-                </div>
+                <div><span class="block text-xs" style="color: var(--text-muted)">Alt. Solo</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.groundClearance }} mm</span></div>
               }
               @if (vehicle.tireSize) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Aro Pneu</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >{{ vehicle.tireSize }}"</span
-                  >
-                </div>
+                <div><span class="block text-xs" style="color: var(--text-muted)">Aro Pneu</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.tireSize }}"</span></div>
               }
               @if (vehicle.autonomyRoad) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Autonomia Rod.</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >{{ vehicle.autonomyRoad }} km/l</span
-                  >
-                </div>
+                <div><span class="block text-xs" style="color: var(--text-muted)">Autonomia Rod.</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.autonomyRoad }} km/l</span></div>
               }
               @if (vehicle.autonomyCity) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Autonomia Cid.</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >{{ vehicle.autonomyCity }} km/l</span
-                  >
-                </div>
+                <div><span class="block text-xs" style="color: var(--text-muted)">Autonomia Cid.</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.autonomyCity }} km/l</span></div>
               }
             </div>
           </div>
         }
 
+        <!-- Detalhes específicos por tipo -->
         <div>
-          <h4
-            class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider"
-            style="color: var(--brand); border-color: var(--surface-border)"
-          >
+          <h4 class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider" style="color: var(--brand); border-color: var(--surface-border)">
             Detalhes Específicos
           </h4>
           <div class="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-2 text-sm">
             @if (vehicle.type === 'CAR') {
-              @if (vehicle.doors) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Portas</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.doors
-                  }}</span>
-                </div>
-              }
-              @if (vehicle.trunkCapacity) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Porta-malas</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >{{ vehicle.trunkCapacity }} L</span
-                  >
-                </div>
-              }
-              @if (vehicle.driveType) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Tração</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.driveType
-                  }}</span>
-                </div>
-              }
+              @if (vehicle.doors) { <div><span class="block text-xs" style="color: var(--text-muted)">Portas</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.doors }}</span></div> }
+              @if (vehicle.trunkCapacity) { <div><span class="block text-xs" style="color: var(--text-muted)">Porta-malas</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.trunkCapacity }} L</span></div> }
+              @if (vehicle.driveType) { <div><span class="block text-xs" style="color: var(--text-muted)">Tração</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.driveType }}</span></div> }
             }
             @if (vehicle.type === 'MOTORCYCLE' && vehicle.hasLuggageCarrier) {
-              <div>
-                <span class="block text-xs" style="color: var(--text-muted)"
-                  >Bagageiro Traseiro</span
-                ><span class="font-medium text-green-500">Sim</span>
-              </div>
+              <div><span class="block text-xs" style="color: var(--text-muted)">Bagageiro Traseiro</span><span class="font-medium text-green-500">Sim</span></div>
             }
             @if (vehicle.type === 'VAN') {
-              @if (vehicle.isCargo) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Tipo</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >Furgão de Carga</span
-                  >
-                </div>
-              }
-              @if (vehicle.cargoVolume) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Volume de Carga</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >{{ vehicle.cargoVolume }} m³</span
-                  >
-                </div>
-              }
+              @if (vehicle.isCargo) { <div><span class="block text-xs" style="color: var(--text-muted)">Tipo</span><span class="font-medium" style="color: var(--text-primary)">Furgão de Carga</span></div> }
+              @if (vehicle.cargoVolume) { <div><span class="block text-xs" style="color: var(--text-muted)">Volume de Carga</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.cargoVolume }} m³</span></div> }
             }
             @if (vehicle.type === 'TRUCK') {
-              @if (vehicle.loadCapacity) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Carga Max.</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >{{ vehicle.loadCapacity }} kg</span
-                  >
-                </div>
-              }
-              @if (vehicle.axles) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Eixos</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.axles
-                  }}</span>
-                </div>
-              }
+              @if (vehicle.loadCapacity) { <div><span class="block text-xs" style="color: var(--text-muted)">Carga Max.</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.loadCapacity }} kg</span></div> }
+              @if (vehicle.axles) { <div><span class="block text-xs" style="color: var(--text-muted)">Eixos</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.axles }}</span></div> }
             }
             @if (vehicle.type === 'BUS') {
-              @if (vehicle.numberOfSeats) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Assentos</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.numberOfSeats
-                  }}</span>
-                </div>
-              }
-              @if (vehicle.hasAccessibility) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Acessibilidade</span
-                  ><span class="font-medium text-green-500">Sim</span>
-                </div>
-              }
+              @if (vehicle.numberOfSeats) { <div><span class="block text-xs" style="color: var(--text-muted)">Assentos</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.numberOfSeats }}</span></div> }
+              @if (vehicle.hasAccessibility) { <div><span class="block text-xs" style="color: var(--text-muted)">Acessibilidade</span><span class="font-medium text-green-500">Sim</span></div> }
             }
             @if (vehicle.type === 'BOAT') {
-              @if (vehicle.length) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Comprimento</span
-                  ><span class="font-medium" style="color: var(--text-primary)"
-                    >{{ vehicle.length }} pés</span
-                  >
-                </div>
-              }
-              @if (vehicle.hullMaterial) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)">Casco</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.hullMaterial
-                  }}</span>
-                </div>
-              }
-              @if (vehicle.autonomy) {
-                <div>
-                  <span class="block text-xs" style="color: var(--text-muted)"
-                    >Autonomia Náutica</span
-                  ><span class="font-medium" style="color: var(--text-primary)">{{
-                    vehicle.autonomy
-                  }}</span>
-                </div>
-              }
+              @if (vehicle.length) { <div><span class="block text-xs" style="color: var(--text-muted)">Comprimento</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.length }} pés</span></div> }
+              @if (vehicle.hullMaterial) { <div><span class="block text-xs" style="color: var(--text-muted)">Casco</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.hullMaterial }}</span></div> }
+              @if (vehicle.autonomy) { <div><span class="block text-xs" style="color: var(--text-muted)">Autonomia Náutica</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.autonomy }}</span></div> }
             }
             @if (vehicle.type === 'OTHER_VEHICLE_TYPE' && vehicle.usage) {
-              <div class="col-span-2">
-                <span class="block text-xs" style="color: var(--text-muted)">Uso Sugerido</span
-                ><span class="font-medium" style="color: var(--text-primary)">{{
-                  vehicle.usage
-                }}</span>
+              <div class="col-span-2"><span class="block text-xs" style="color: var(--text-muted)">Uso Sugerido</span><span class="font-medium" style="color: var(--text-primary)">{{ vehicle.usage }}</span></div>
+            }
+          </div>
+        </div>
+
+        <!-- Painel e observações -->
+        <div>
+          <h4 class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider" style="color: var(--brand); border-color: var(--surface-border)">
+            Painel e Observações
+          </h4>
+          <div class="text-sm space-y-4">
+            <div>
+              <span class="block text-xs mb-1" style="color: var(--text-muted)">Infotainment / Painel</span>
+              <span class="font-medium" style="color: var(--text-primary)">{{ vehicle.infotainmentSystem }}</span>
+            </div>
+            <div>
+              <span class="block text-xs mb-1" style="color: var(--text-muted)">Descrição</span>
+              <div class="p-3 rounded bg-surface-tertiary" style="color: var(--text-primary); white-space: pre-wrap">{{ vehicle.description }}</div>
+            </div>
+            @if (vehicle.branch) {
+              <div>
+                <span class="block text-xs mb-1" style="color: var(--text-muted)">Filial Responsável</span>
+                <span class="font-medium" style="color: var(--text-primary)">{{ vehicle.branch.name }}</span>
               </div>
             }
           </div>
         </div>
 
-        <div>
-          <h4
-            class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider"
-            style="color: var(--brand); border-color: var(--surface-border)"
-          >
-            Painel e Observações
-          </h4>
-          <div class="text-sm space-y-4">
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)"
-                >Infotainment / Painel</span
-              ><span class="font-medium" style="color: var(--text-primary)">{{
-                vehicle.infotainmentSystem
-              }}</span>
-            </div>
-            <div>
-              <span class="block text-xs mb-1" style="color: var(--text-muted)">Descrição</span>
-              <div
-                class="p-3 rounded bg-surface-tertiary"
-                style="color: var(--text-primary); white-space: pre-wrap"
-              >
-                {{ vehicle.description }}
-              </div>
-            </div>
-            @if (vehicle.branch) {
-              <div>
-                <span class="block text-xs mb-1" style="color: var(--text-muted)"
-                  >Filial Responsável</span
-                ><span class="font-medium" style="color: var(--text-primary)">{{
-                  vehicle.branch.name
-                }}</span>
-              </div>
-            }
-          </div>
-        </div>
       </div>
     }
   </ng-container>
   <ng-container slot="footer">
-    <button class="btn-brand w-full justify-center py-2" (click)="close()">
-      Fechar Visualização
-    </button>
+    <button class="btn-brand w-full justify-center py-2" (click)="close()">Fechar Visualização</button>
   </ng-container>
 </app-modal>

@@ -24,6 +24,13 @@ import { VehicleView } from './vehicle-view/vehicle-view';
 import { VehicleImagesModal } from './vehicle-images-modal/vehicle-images-modal';
 import { VehicleResponseDTO, VehicleImageFile, PagedResponse } from '../../shared/interfaces';
 
+interface UploadedFile {
+  fileName: string;
+  fileDownloadUri: string;
+  fileType: string;
+  size: number;
+}
+
 @Component({
   selector: 'app-vehicles',
   imports: [CommonModule, FormsModule, Pagination, VehicleForm, VehicleView, VehicleImagesModal],
@@ -37,10 +44,10 @@ export class Vehicles implements OnInit {
   private cache = inject(CacheService);
   private cdr   = inject(ChangeDetectorRef);
 
-  loading          = false;
-  modalOpen        = false;
-  viewModalOpen    = false;
-  imagesModalOpen  = false;
+  loading         = false;
+  modalOpen       = false;
+  viewModalOpen   = false;
+  imagesModalOpen = false;
 
   selectedVehicle: VehicleResponseDTO | null = null;
   viewVehicle:     VehicleResponseDTO | null = null;
@@ -57,6 +64,8 @@ export class Vehicles implements OnInit {
   fmtCurrency = (v: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
   fmtMileage = (v: number) => (v != null ? `${Number(v).toLocaleString('pt-BR')} km` : '—');
+  getImageUrl = (img: VehicleImageFile): string =>
+  img.downloadUri ?? img.fileDownloadUri ?? '';
 
   availClass         = availabilityClass;
   availLabel         = availabilityLabel;
@@ -172,22 +181,28 @@ export class Vehicles implements OnInit {
     this.cdr.markForCheck();
   }
 
-  onImagesUpdated(images: VehicleImageFile[]): void {
+  onImagesUpdated(newFiles: UploadedFile[]): void {
     if (!this.imagesVehicle) return;
 
     const id = this.imagesVehicle.id;
 
-    // Atualiza as listas com nova referência para o OnPush detectar
-    this.items    = this.items.map(v =>
-      v.id === id ? { ...v, images: [...images] } : v
-    );
-    this.filtered = this.filtered.map(v =>
-      v.id === id ? { ...v, images: [...images] } : v
-    );
+    // Converte UploadedFile para VehicleImageFile e adiciona às imagens existentes
+    const newImages: VehicleImageFile[] = newFiles.map(f => ({
+      fileName:        f.fileName,
+      fileDownloadUri: f.fileDownloadUri,
+      fileType:        f.fileType,
+      size:            f.size,
+    }));
 
-    // Invalida o cache para que o próximo load busque os dados atualizados
+    const updateVehicle = (v: VehicleResponseDTO): VehicleResponseDTO => {
+      if (v.id !== id) return v;
+      return { ...v, images: [...(v.images ?? []), ...newImages] };
+    };
+
+    this.items    = this.items.map(updateVehicle);
+    this.filtered = this.filtered.map(updateVehicle);
+
     this.cache.invalidate(this.cacheKey(this.page));
-
     this.cdr.markForCheck();
   }
 

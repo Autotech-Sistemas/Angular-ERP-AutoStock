@@ -9,8 +9,15 @@ import {
   inject,
 } from '@angular/core';
 import { Modal } from '../../../shared/components/modal/modal';
-import { VehicleResponseDTO, VehicleImageFile } from '../../../shared/interfaces';
 import { VehicleImageUpload } from '../vehicle-image-upload/vehicle-image-upload';
+import { VehicleResponseDTO, VehicleImageFile } from '../../../shared/interfaces';
+
+interface UploadedFile {
+  fileName: string;
+  fileDownloadUri: string;
+  fileType: string;
+  size: number;
+}
 
 @Component({
   selector: 'app-vehicle-images-modal',
@@ -25,13 +32,15 @@ export class VehicleImagesModal {
   @Input() isOpen = false;
   @Input() vehicle: VehicleResponseDTO | null = null;
   @Output() closed = new EventEmitter<void>();
-  @Output() imagesUpdated = new EventEmitter<VehicleImageFile[]>();
+  @Output() imagesUpdated = new EventEmitter<UploadedFile[]>();
 
-  onUploaded(files: VehicleImageFile[]): void {
+  // Resolve downloadUri (GET) ou fileDownloadUri (POST upload)
+  getImageUrl = (img: VehicleImageFile): string =>
+    img.downloadUri ?? img.fileDownloadUri ?? '';
+
+  onUploaded(files: UploadedFile[]): void {
     if (!this.vehicle) return;
-    const current = this.vehicle.images ?? [];
-    this.vehicle = { ...this.vehicle, images: [...current, ...files] };
-    this.imagesUpdated.emit(this.vehicle.images);
+    this.imagesUpdated.emit(files);
     this.cdr.markForCheck();
   }
 

@@ -11,9 +11,9 @@ export type VehicleAvailability = 'AVAILABLE' | 'SOLD' | 'PENDING' | 'RESERVED' 
 export interface VehicleImageFile {
   id?: string;
   name?: string;
-  downloadUri?: string;      
-  fileName?: string;         
-  fileDownloadUri?: string;  
+  downloadUri?: string;       // campo retornado pelo GET /vehicles
+  fileDownloadUri?: string;   // campo retornado pelo POST /file/upload-vehicle-image
+  type?: string;
   fileType?: string;
   size?: number;
 }
@@ -62,20 +62,16 @@ export interface VehicleRequest {
   numberOfGears?: number;
   steeringType?: string;
   tireSize?: number;
-  // CAR
   doors?: number;
   trunkCapacity?: number;
   driveType?: string;
-  // MOTORCYCLE
   hasLuggageCarrier?: boolean;
-  // VAN / TRUCK / BUS
   isCargo?: boolean;
   cargoVolume?: number;
   loadCapacity?: number;
   axles?: number;
   numberOfSeats?: number;
   hasAccessibility?: boolean;
-  // BOAT
   length?: number;
   hullMaterial?: string;
   autonomy?: number;
