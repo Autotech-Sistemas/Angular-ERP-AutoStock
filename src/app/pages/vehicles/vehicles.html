@@ -12,32 +12,14 @@
         title="Atualizar dados"
         aria-label="Atualizar lista de veículos"
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          [class.animate-spin]="loading"
-          aria-hidden="true"
-        >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.animate-spin]="loading" aria-hidden="true">
           <path d="M1 4v6h6M23 20v-6h-6" />
           <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
         </svg>
         Atualizar
       </button>
-
       <button class="btn-brand" (click)="openNew()">
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          aria-hidden="true"
-        >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
@@ -47,22 +29,9 @@
   </div>
 
   <div class="card overflow-hidden">
-    <div
-      class="p-4 flex flex-wrap gap-3 items-center justify-between"
-      style="border-bottom: 1px solid var(--surface-border)"
-    >
+    <div class="p-4 flex flex-wrap gap-3 items-center justify-between" style="border-bottom: 1px solid var(--surface-border)">
       <div class="relative">
-        <svg
-          class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          style="color: var(--text-muted)"
-          aria-hidden="true"
-        >
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--text-muted)" aria-hidden="true">
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
@@ -75,12 +44,7 @@
           aria-label="Buscar veículo"
         />
       </div>
-      <select
-        class="form-input w-auto text-sm"
-        [(ngModel)]="typeFilter"
-        (change)="onSearch()"
-        aria-label="Filtrar por tipo"
-      >
+      <select class="form-input w-auto text-sm" [(ngModel)]="typeFilter" (change)="onSearch()" aria-label="Filtrar por tipo">
         <option value="">Todos os tipos</option>
         <option value="CAR">Carro</option>
         <option value="MOTORCYCLE">Moto</option>
@@ -96,11 +60,14 @@
       <table class="data-table" role="grid" aria-label="Lista de veículos">
         <thead>
           <tr>
+            <th scope="col" style="width: 72px;">Foto</th>
             <th scope="col">Veículo</th>
             <th scope="col">Tipo</th>
             <th scope="col">Ano</th>
             <th scope="col">Combustível</th>
+            <th scope="col">Transmissão</th>
             <th scope="col">Km</th>
+            <th scope="col">Filial</th>
             <th scope="col">Preço</th>
             <th scope="col">Status</th>
             <th scope="col">Disponibilidade</th>
@@ -111,75 +78,137 @@
           @if (loading) {
             @for (i of [1, 2, 3, 4, 5]; track i) {
               <tr>
-                @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track j) {
+                @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; track j) {
                   <td>
-                    <div
-                      class="h-4 rounded animate-pulse"
-                      style="background: var(--surface-tertiary)"
-                    ></div>
+                    <div class="h-4 rounded animate-pulse" style="background: var(--surface-tertiary)"></div>
                   </td>
                 }
               </tr>
             }
           } @else if (filtered.length === 0) {
             <tr>
-              <td colspan="9" class="text-center py-10 text-sm" style="color: var(--text-muted)">
+              <td colspan="12" class="text-center py-10 text-sm" style="color: var(--text-muted)">
                 Nenhum veículo encontrado
               </td>
             </tr>
           } @else {
             @for (v of filtered; track v.id) {
               <tr>
+
+                <!-- Imagem -->
                 <td>
-                  <div class="font-medium" style="color: var(--text-primary)">
-                    {{ v.brand }} {{ v.model }}
-                  </div>
+                  @if (v.images && v.images.length > 0) {
+                    <img
+                      [src]="v.images[0].downloadUri"
+                      [alt]="v.brand + ' ' + v.model"
+                      style="width: 56px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid var(--surface-border); cursor: pointer;"
+                      (click)="openImages(v)"
+                      title="Ver/adicionar imagens"
+                    />
+                  } @else {
+                    <button
+                      class="flex items-center justify-center"
+                      style="width: 56px; height: 40px; border-radius: 6px; border: 1px dashed var(--surface-border); background: var(--surface-tertiary); cursor: pointer;"
+                      (click)="openImages(v)"
+                      title="Adicionar imagens"
+                      [attr.aria-label]="'Adicionar imagens a ' + v.brand + ' ' + v.model"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--text-muted)">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <line x1="12" y1="8" x2="12" y2="16" />
+                        <line x1="8" y1="12" x2="16" y2="12" />
+                      </svg>
+                    </button>
+                  }
+                </td>
+
+                <!-- Veículo -->
+                <td>
+                  <div class="font-medium" style="color: var(--text-primary)">{{ v.brand }} {{ v.model }}</div>
                   <div class="text-xs" style="color: var(--text-muted)">{{ v.color }}</div>
                 </td>
+
+                <!-- Tipo -->
                 <td>
-                  <!-- BADGE DO TIPO DE VEÍCULO -->
                   <span
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"
                     [style.backgroundColor]="getTypeConfig(v.type).bg"
                     [style.color]="getTypeConfig(v.type).text"
                   >
-                    <span aria-hidden="true" class="text-sm">{{ getTypeConfig(v.type).icon }}</span>
-                    {{ getTypeConfig(v.type).label }}
+                    {{ getTypeConfig(v.type).icon }} {{ getTypeConfig(v.type).label }}
                   </span>
                 </td>
-                <td>{{ getYear(v.manufactureYear) }}</td>
-                <td>{{ fuelLabel(v.fuelType) }}</td>
+
+                <!-- Ano -->
+                <td class="font-mono text-xs">{{ getYear(v.manufactureYear) }}</td>
+
+                <!-- Combustível -->
+                <td class="text-sm">{{ fuelLabel(v.fuelType) }}</td>
+
+                <!-- Transmissão -->
+                <td class="text-xs" style="color: var(--text-muted)">
+                  @switch (v.transmissionType) {
+                    @case ('MANUAL') { Manual }
+                    @case ('AUTOMATIC') { Automático }
+                    @case ('SEMI_AUTOMATIC') { Semi-auto }
+                    @case ('CVT') { CVT }
+                    @case ('DUAL_CLUTCH') { Dupla embreagem }
+                    @default { — }
+                  }
+                </td>
+
+                <!-- Km -->
                 <td class="font-mono text-xs">{{ fmtMileage(v.mileage) }}</td>
+
+                <!-- Filial -->
+                <td class="text-sm">
+                  <div style="color: var(--text-primary)">{{ v.branch?.name ?? '—' }}</div>
+                  <div class="text-xs" style="color: var(--text-muted)">{{ v.branch?.address?.city ?? '' }}</div>
+                </td>
+
+                <!-- Preço -->
                 <td class="font-semibold" style="color: #4ade80">{{ fmtCurrency(v.salePrice) }}</td>
+
+                <!-- Status -->
                 <td>
-                  <span class="badge" [class]="vehicleStatusClass(v.status ?? '')">{{
-                    vehicleStatusLabel(v.status ?? '')
-                  }}</span>
+                  <span class="badge" [class]="vehicleStatusClass(v.status)">
+                    {{ vehicleStatusLabel(v.status) }}
+                  </span>
                 </td>
+
+                <!-- Disponibilidade -->
                 <td>
-                  <span class="badge" [class]="availClass(v.availability ?? '')">{{
-                    availLabel(v.availability ?? '')
-                  }}</span>
+                  <span class="badge" [class]="availClass(v.availability)">
+                    {{ availLabel(v.availability) }}
+                  </span>
                 </td>
+
+                <!-- Ações -->
                 <td>
                   <div class="flex justify-end gap-1.5">
-                    <button class="btn-secondary px-2" (click)="openView(v)" title="Ver Detalhes">
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
+                    <button
+                      class="btn-secondary px-2"
+                      (click)="openImages(v)"
+                      title="Gerenciar imagens"
+                      [attr.aria-label]="'Gerenciar imagens de ' + v.brand + ' ' + v.model"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </button>
+                    <button class="btn-secondary px-2" (click)="openView(v)" title="Ver detalhes" [attr.aria-label]="'Ver detalhes de ' + v.brand + ' ' + v.model">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                         <circle cx="12" cy="12" r="3"></circle>
                       </svg>
                     </button>
                     <button class="btn-edit px-3" (click)="openEdit(v)">Editar</button>
-                    <button class="btn-danger px-3" (click)="delete(v)">Excluir</button>
+                    <button class="btn-danger px-3" (click)="delete(v)" [attr.aria-label]="'Excluir ' + v.brand + ' ' + v.model">Excluir</button>
                   </div>
                 </td>
+
               </tr>
             }
           }
@@ -187,13 +216,8 @@
       </table>
     </div>
 
-    <div
-      class="p-4 flex flex-wrap items-center justify-between gap-3"
-      style="border-top: 1px solid var(--surface-border)"
-    >
-      <span class="text-xs" style="color: var(--text-muted)"
-        >{{ totalElements }} veículo(s) encontrado(s)</span
-      >
+    <div class="p-4 flex flex-wrap items-center justify-between gap-3" style="border-top: 1px solid var(--surface-border)">
+      <span class="text-xs" style="color: var(--text-muted)">{{ totalElements }} veículo(s) encontrado(s)</span>
       <app-pagination
         [totalElements]="totalElements"
         [pageSize]="12"
@@ -215,4 +239,11 @@
     [vehicle]="viewVehicle"
     (closed)="viewModalOpen = false"
   ></app-vehicle-view>
+
+  <app-vehicle-images-modal
+    [isOpen]="imagesModalOpen"
+    [vehicle]="imagesVehicle"
+    (closed)="imagesModalOpen = false"
+    (imagesUpdated)="onImagesUpdated($event)"
+  ></app-vehicle-images-modal>
 </div>

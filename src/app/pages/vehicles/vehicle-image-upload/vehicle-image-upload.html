@@ -1,0 +1,130 @@
+<div class="flex flex-col gap-4">
+
+  <!-- Drop zone -->
+  <div
+    class="upload-zone"
+    [class.drag-over]="isDragging()"
+    (click)="fileInput.click()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="isDragging.set(false)"
+    (drop)="onDrop($event)"
+    role="button"
+    tabindex="0"
+    aria-label="Clique ou arraste imagens para enviar"
+    (keydown.enter)="fileInput.click()"
+  >
+    <input
+      #fileInput
+      type="file"
+      class="hidden"
+      multiple
+      accept="image/*"
+      (change)="onFileSelect($event)"
+      aria-hidden="true"
+    />
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+    <p class="text-sm font-medium" style="color: var(--text-secondary)">Arraste imagens aqui</p>
+    <p class="text-xs mt-1" style="color: var(--text-muted)">ou clique para selecionar</p>
+  </div>
+
+  <!-- Preview das imagens selecionadas -->
+  @if (previews().length > 0) {
+    <div>
+      <p class="text-xs font-medium mb-2" style="color: var(--text-secondary)">
+        Pré-visualização ({{ previews().length }})
+      </p>
+      <div class="grid grid-cols-3 gap-2">
+        @for (p of previews(); track p.previewUrl; let i = $index) {
+          <div
+            class="relative rounded-lg overflow-hidden group"
+            style="aspect-ratio: 4/3; border: 1px solid var(--surface-border)"
+          >
+            <img
+              [src]="p.previewUrl"
+              [alt]="p.file.name"
+              style="width: 100%; height: 100%; object-fit: cover;"
+            />
+            <!-- Overlay com info e botão remover -->
+            <div
+              class="absolute inset-0 flex flex-col justify-between p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+              style="background: rgba(0,0,0,0.55)"
+            >
+              <button
+                class="self-end flex items-center justify-center w-6 h-6 rounded-full"
+                style="background: rgba(220,38,38,0.9); color: white; font-size: 12px; line-height: 1;"
+                (click)="removeFile(i); $event.stopPropagation()"
+                [attr.aria-label]="'Remover ' + p.file.name"
+              >✕</button>
+              <span class="text-xs truncate" style="color: rgba(255,255,255,0.85)">
+                {{ fmtSize(p.file.size) }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Barra de progresso -->
+  @if (uploading()) {
+    <div role="progressbar" [attr.aria-valuenow]="progress()" aria-valuemin="0" aria-valuemax="100">
+      <div class="flex justify-between text-xs mb-1" style="color: var(--text-muted)">
+        <span>Enviando...</span>
+        <span>{{ progress() }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="progress()"></div>
+      </div>
+    </div>
+  }
+
+  <!-- Botão de envio -->
+  <button
+    class="btn-brand w-full justify-center"
+    [disabled]="previews().length === 0 || uploading()"
+    (click)="upload()"
+    type="button"
+  >
+    @if (uploading()) {
+      <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="30 60" stroke-linecap="round" />
+      </svg>
+      Enviando...
+    } @else {
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+      Enviar {{ previews().length > 0 ? '(' + previews().length + ')' : '' }}
+    }
+  </button>
+
+  <!-- Imagens já enviadas nesta sessão -->
+  @if (uploadedFiles().length > 0) {
+    <div>
+      <p class="text-xs font-medium mb-2" style="color: var(--text-secondary)">
+        Enviadas nesta sessão ({{ uploadedFiles().length }})
+      </p>
+      <div class="grid grid-cols-3 gap-2">
+        @for (f of uploadedFiles(); track f.fileName) {
+          <div
+            class="relative rounded-lg overflow-hidden"
+            style="aspect-ratio: 4/3; border: 1px solid var(--surface-border)"
+          >
+            <img
+              [src]="f.fileDownloadUri"
+              [alt]="f.fileName"
+              style="width: 100%; height: 100%; object-fit: cover;"
+            />
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+</div>

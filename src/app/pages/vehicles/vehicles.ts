@@ -11,7 +11,6 @@ import { VehicleService } from '../../services/vehicle.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CacheService } from '../../services/cache.service';
 import {
-  formatCurrency,
   availabilityClass,
   availabilityLabel,
   vehicleStatusClass,
@@ -21,64 +20,66 @@ import {
 import Swal from 'sweetalert2';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { VehicleForm } from './vehicle-form/vehicle-form';
-import { VehicleView } from "./vehicle-view/vehicle-view";
-import { VehicleResponseDTO, PagedResponse } from '../../shared/interfaces';
+import { VehicleView } from './vehicle-view/vehicle-view';
+import { VehicleImagesModal } from './vehicle-images-modal/vehicle-images-modal';
+import { VehicleResponseDTO, VehicleImageFile, PagedResponse } from '../../shared/interfaces';
 
 @Component({
   selector: 'app-vehicles',
-  imports: [CommonModule, FormsModule, Pagination, VehicleForm, VehicleView],
+  imports: [CommonModule, FormsModule, Pagination, VehicleForm, VehicleView, VehicleImagesModal],
   templateUrl: './vehicles.html',
   styleUrl: './vehicles.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Vehicles implements OnInit {
-  private svc = inject(VehicleService);
+  private svc   = inject(VehicleService);
   private toast = inject(ToastService);
   private cache = inject(CacheService);
-  private cdr = inject(ChangeDetectorRef);
+  private cdr   = inject(ChangeDetectorRef);
 
-  loading = false;
-  modalOpen = false;
+  loading          = false;
+  modalOpen        = false;
+  viewModalOpen    = false;
+  imagesModalOpen  = false;
+
   selectedVehicle: VehicleResponseDTO | null = null;
-  
-  viewModalOpen = false;
-  viewVehicle: VehicleResponseDTO | null = null;
+  viewVehicle:     VehicleResponseDTO | null = null;
+  imagesVehicle:   VehicleResponseDTO | null = null;
 
-  items: VehicleResponseDTO[] = [];
+  items:    VehicleResponseDTO[] = [];
   filtered: VehicleResponseDTO[] = [];
-  
+
   searchQuery = '';
-  typeFilter = '';
-  page = 0;
+  typeFilter  = '';
+  page          = 0;
   totalElements = 0;
 
-  // Formatador de moeda sem depender de imports externos para evitar conflitos na IDE
-  fmtCurrency = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
+  fmtCurrency = (v: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v ?? 0);
   fmtMileage = (v: number) => (v != null ? `${Number(v).toLocaleString('pt-BR')} km` : '—');
-  
-  availClass = availabilityClass;
-  availLabel = availabilityLabel;
+
+  availClass         = availabilityClass;
+  availLabel         = availabilityLabel;
   vehicleStatusClass = vehicleStatusClass;
   vehicleStatusLabel = vehicleStatusLabel;
-  fuelLabel = fuelLabel;
-  
+  fuelLabel          = fuelLabel;
+
   getYear = (d: string | number | undefined | null) => {
     if (!d) return '—';
     if (typeof d === 'number') return d;
     return String(d).substring(0, 4);
   };
 
-  // NOVO: Configuração visual para os tipos de veículos (Ícones, Cores e Tradução)
   getTypeConfig = (type: string | undefined) => {
     const t = type || 'OTHER_VEHICLE_TYPE';
-    const config: Record<string, { label: string, icon: string, bg: string, text: string }> = {
-      'CAR': { label: 'Carro', icon: '🚗', bg: '#eff6ff', text: '#2563eb' },
-      'MOTORCYCLE': { label: 'Moto', icon: '🏍️', bg: '#f0fdf4', text: '#16a34a' },
-      'TRUCK': { label: 'Caminhão', icon: '🚚', bg: '#fef2f2', text: '#dc2626' },
-      'VAN': { label: 'Van', icon: '🚐', bg: '#faf5ff', text: '#9333ea' },
-      'BUS': { label: 'Ônibus', icon: '🚌', bg: '#fffbeb', text: '#d97706' },
-      'BOAT': { label: 'Barco', icon: '🚤', bg: '#ecfeff', text: '#0891b2' },
-      'OTHER_VEHICLE_TYPE': { label: 'Outros', icon: '🚜', bg: '#f3f4f6', text: '#4b5563' },
+    const config: Record<string, { label: string; icon: string; bg: string; text: string }> = {
+      CAR:                { label: 'Carro',    icon: '🚗', bg: '#eff6ff', text: '#2563eb' },
+      MOTORCYCLE:         { label: 'Moto',     icon: '🏍️', bg: '#f0fdf4', text: '#16a34a' },
+      TRUCK:              { label: 'Caminhão', icon: '🚚', bg: '#fef2f2', text: '#dc2626' },
+      VAN:                { label: 'Van',      icon: '🚐', bg: '#faf5ff', text: '#9333ea' },
+      BUS:                { label: 'Ônibus',   icon: '🚌', bg: '#fffbeb', text: '#d97706' },
+      BOAT:               { label: 'Barco',    icon: '🚤', bg: '#ecfeff', text: '#0891b2' },
+      OTHER_VEHICLE_TYPE: { label: 'Outros',   icon: '🚜', bg: '#f3f4f6', text: '#4b5563' },
     };
     return config[t] || config['OTHER_VEHICLE_TYPE'];
   };
@@ -97,7 +98,7 @@ export class Vehicles implements OnInit {
 
     if (!forceRefresh && this.cache.has(key)) {
       const cached = this.cache.get<{ items: VehicleResponseDTO[]; total: number }>(key)!;
-      this.items = cached.items;
+      this.items         = cached.items;
       this.totalElements = cached.total;
       this.applyFilter();
       this.cdr.markForCheck();
@@ -110,9 +111,8 @@ export class Vehicles implements OnInit {
     this.svc.getAll(page).subscribe({
       next: (response) => {
         const r = response as unknown as PagedResponse<VehicleResponseDTO>;
-        this.items = r._embedded?.['vehicleResponseDTOList'] ?? [];
+        this.items         = r._embedded?.['vehicleResponseDTOList'] ?? [];
         this.totalElements = r.page?.totalElements ?? 0;
-        
         this.cache.set(key, { items: this.items, total: this.totalElements });
         this.applyFilter();
         this.loading = false;
@@ -137,7 +137,7 @@ export class Vehicles implements OnInit {
 
   applyFilter(): void {
     this.filtered = this.items.filter((v) => {
-      const q = this.searchQuery.toLowerCase();
+      const q      = this.searchQuery.toLowerCase();
       const matchQ = !q || `${v.brand} ${v.model} ${v.color}`.toLowerCase().includes(q);
       const matchT = !this.typeFilter || v.type === this.typeFilter;
       return matchQ && matchT;
@@ -150,19 +150,44 @@ export class Vehicles implements OnInit {
 
   openNew(): void {
     this.selectedVehicle = null;
-    this.modalOpen = true;
+    this.modalOpen       = true;
     this.cdr.markForCheck();
   }
 
   openEdit(v: VehicleResponseDTO): void {
     this.selectedVehicle = v;
-    this.modalOpen = true;
+    this.modalOpen       = true;
     this.cdr.markForCheck();
   }
 
   openView(v: VehicleResponseDTO): void {
-    this.viewVehicle = v;
+    this.viewVehicle   = v;
     this.viewModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  openImages(v: VehicleResponseDTO): void {
+    this.imagesVehicle   = { ...v };
+    this.imagesModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  onImagesUpdated(images: VehicleImageFile[]): void {
+    if (!this.imagesVehicle) return;
+
+    const id = this.imagesVehicle.id;
+
+    // Atualiza as listas com nova referência para o OnPush detectar
+    this.items    = this.items.map(v =>
+      v.id === id ? { ...v, images: [...images] } : v
+    );
+    this.filtered = this.filtered.map(v =>
+      v.id === id ? { ...v, images: [...images] } : v
+    );
+
+    // Invalida o cache para que o próximo load busque os dados atualizados
+    this.cache.invalidate(this.cacheKey(this.page));
+
     this.cdr.markForCheck();
   }
 

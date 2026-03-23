@@ -10,16 +10,18 @@ export type VehicleAvailability = 'AVAILABLE' | 'SOLD' | 'PENDING' | 'RESERVED' 
 
 export interface VehicleImageFile {
   id?: string;
-  name: string;
-  downloadUri: string;
-  type?: string;
+  name?: string;
+  downloadUri?: string;      
+  fileName?: string;         
+  fileDownloadUri?: string;  
+  fileType?: string;
   size?: number;
 }
 
 export interface UploadFileResponseDTO {
-  name?: string;
-  downloadUri?: string;
-  type?: string;
+  fileName?: string;
+  fileDownloadUri?: string;
+  fileType?: string;
   size?: number;
 }
 
