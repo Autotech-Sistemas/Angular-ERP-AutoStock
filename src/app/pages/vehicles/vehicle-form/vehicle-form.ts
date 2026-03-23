@@ -15,14 +15,9 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ToastService } from '../../../core/services/toast.service';
 import { VehicleService } from '../../../services/vehicle.service';
 import { Modal } from '../../../shared/components/modal/modal';
-import {
-  VehicleResponseDTO,
-  Vehicle,
-  BranchResponseDTO,
-  PagedResponse,
-} from '../../../shared/interfaces/models.interface';
 import { catchError, of } from 'rxjs';
 import { BranchService } from '../../../services/branch.service';
+import { BranchResponseDTO, PagedResponse, Vehicle, VehicleResponseDTO } from '../../../shared/interfaces';
 
 @Component({
   selector: 'app-vehicle-form',

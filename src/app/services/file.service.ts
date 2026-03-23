@@ -7,19 +7,11 @@ import { ApiService } from './api.service';
 export class FileService {
   constructor(private api: ApiService) {}
 
-  uploadFile(file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.api.create<any>('/file/upload-file', formData);
+  uploadVehicleImage(vehicleId: string, file: File) {
+    return this.api.uploadVehicleImage(vehicleId, file);
   }
 
-  uploadMultipleFiles(files: File[]) {
-    const formData = new FormData();
-    files.forEach((file) => formData.append('files', file));
-    return this.api.create<any>('/file/upload-multiple-files', formData);
-  }
-
-  downloadFile(fileName: string) {
-    return this.api.getAll<Blob>(`/file/download-file/${fileName}`);
+  uploadMultipleVehicleImages(vehicleId: string, files: File[]) {
+    return this.api.uploadMultipleVehicleImages(vehicleId, files);
   }
 }

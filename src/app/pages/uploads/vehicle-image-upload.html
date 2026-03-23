@@ -1,0 +1,159 @@
+<div class="flex flex-col gap-4">
+
+  <!-- Drop zone -->
+  <div
+    class="upload-zone"
+    [class.drag-over]="isDragging()"
+    (click)="fileInput.click()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="isDragging.set(false)"
+    (drop)="onDrop($event)"
+    role="button"
+    tabindex="0"
+    aria-label="Clique ou arraste arquivos para enviar"
+    (keydown.enter)="fileInput.click()"
+  >
+    <input
+      #fileInput
+      type="file"
+      class="hidden"
+      multiple
+      accept="image/*"
+      (change)="onFileSelect($event)"
+      aria-hidden="true"
+    />
+
+    <svg
+      width="36"
+      height="36"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--text-muted)"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="mx-auto mb-2"
+      aria-hidden="true"
+    >
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="17 8 12 3 7 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+    <p class="text-sm font-medium" style="color: var(--text-secondary)">Arraste imagens aqui</p>
+    <p class="text-xs mt-1" style="color: var(--text-muted)">ou clique para selecionar</p>
+  </div>
+
+  <!-- Arquivos selecionados -->
+  @if (selectedFiles().length > 0) {
+    <div class="space-y-2" role="list" aria-label="Arquivos selecionados">
+      @for (f of selectedFiles(); track f.name; let i = $index) {
+        <div
+          class="flex items-center gap-3 p-3 rounded-lg"
+          style="background: var(--surface-tertiary); border: 1px solid var(--surface-border)"
+          role="listitem"
+        >
+          <div
+            class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+            style="background: rgba(234, 88, 12, 0.12); color: var(--brand)"
+            aria-hidden="true"
+          >
+            {{ getExt(f.name) }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm truncate" style="color: var(--text-primary)">{{ f.name }}</div>
+            <div class="text-xs" style="color: var(--text-muted)">{{ fmtSize(f.size) }}</div>
+          </div>
+          <button
+            class="text-xs transition-colors"
+            style="color: var(--text-muted)"
+            (click)="removeFile(i)"
+            [attr.aria-label]="'Remover ' + f.name"
+          >
+            ✕
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Barra de progresso -->
+  @if (uploading()) {
+    <div
+      role="progressbar"
+      [attr.aria-valuenow]="progress()"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <div class="flex justify-between text-xs mb-1" style="color: var(--text-muted)">
+        <span>Enviando...</span>
+        <span>{{ progress() }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="progress()"></div>
+      </div>
+    </div>
+  }
+
+  <!-- Botão de envio -->
+  <button
+    class="btn-brand w-full justify-center"
+    [disabled]="selectedFiles().length === 0 || uploading()"
+    (click)="upload()"
+    type="button"
+  >
+    @if (uploading()) {
+      <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-dasharray="30 60"
+          stroke-linecap="round"
+        />
+      </svg>
+      Enviando...
+    } @else {
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+      Enviar Imagem(ns)
+    }
+  </button>
+
+  <!-- Imagens enviadas -->
+  @if (uploadedFiles().length > 0) {
+    <div class="mt-2">
+      <p class="text-xs font-medium mb-2" style="color: var(--text-secondary)">
+        Imagens enviadas ({{ uploadedFiles().length }})
+      </p>
+      <div class="grid grid-cols-3 gap-2" role="list" aria-label="Imagens enviadas">
+        @for (f of uploadedFiles(); track f.name) {
+          <div
+            class="relative rounded-lg overflow-hidden"
+            style="aspect-ratio: 1; border: 1px solid var(--surface-border)"
+            role="listitem"
+          >
+            <img
+              [src]="f.downloadUri"
+              [alt]="f.name"
+              class="w-full h-full object-cover"
+            />
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+</div>

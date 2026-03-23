@@ -11,12 +11,7 @@ import {
   aptStatusLabel,
   aptStatusClass,
 } from '../../shared/helpers/formatters.helper';
-import {
-  DashboardSummary,
-  AppointmentResponseDTO,
-  BranchResponseDTO,
-  PagedResponse,
-} from '../../shared/interfaces/models.interface';
+import { AppointmentResponseDTO, BranchResponseDTO, DashboardSummary, PagedResponse } from '../../shared/interfaces';
 
 export interface DashboardStat {
   label: string;

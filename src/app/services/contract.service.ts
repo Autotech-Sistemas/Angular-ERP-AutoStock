@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Contract, ContractResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
+import { ContractRequest, ContractPatchRequest, ContractResponseDTO } from '../shared/interfaces';
 
 @Injectable({
   providedIn: 'root',
@@ -16,11 +16,11 @@ export class ContractService {
     return this.api.getById<ContractResponseDTO>('/contracts', id);
   }
 
-  create(c: Contract) {
+  create(c: ContractRequest) {
     return this.api.create<ContractResponseDTO>('/contracts', c);
   }
 
-  update(id: string, c: Partial<Contract>) {
+  update(id: string, c: Partial<ContractPatchRequest>) {
     return this.api.update<ContractResponseDTO>('/contracts', id, c);
   }
 

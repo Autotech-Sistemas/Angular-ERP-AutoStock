@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Appointment, AppointmentResponse, AppointmentResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
+import { AppointmentRequest, AppointmentPatchRequest, AppointmentResponseDTO } from '../shared/interfaces';
 
 @Injectable({
   providedIn: 'root',
@@ -16,11 +16,11 @@ export class AppointmentService {
     return this.api.getById<AppointmentResponseDTO>('/appointments', id);
   }
 
-  create(a: Appointment) {
+  create(a: AppointmentRequest) {
     return this.api.create<AppointmentResponseDTO>('/appointments', a);
   }
 
-  update(id: string, a: Partial<Appointment>) {
+  update(id: string, a: AppointmentPatchRequest) {
     return this.api.update<AppointmentResponseDTO>('/appointments', id, a);
   }
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { InventoryItem, InventoryItemResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
+import { InventoryItemResponseDTO, InventoryItem } from '../shared/interfaces';
 
 @Injectable({
   providedIn: 'root',

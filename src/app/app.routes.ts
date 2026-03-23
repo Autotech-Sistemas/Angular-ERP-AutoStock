@@ -2,8 +2,6 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './authentication/guards/guest.guard';
 
-const load = <T>(loader: () => Promise<T>) => loader;
-
 export const routes: Routes = [
   {
     path: 'login',
@@ -15,10 +13,8 @@ export const routes: Routes = [
     path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./shared/components/sidebar/sidebar').then((m) => m.Sidebar),
-
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-
       {
         path: 'dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard),
@@ -80,15 +76,8 @@ export const routes: Routes = [
         title: 'Administradores — AutoStock',
         data: { icon: 'shield', label: 'Administradores' },
       },
-      {
-        path: 'arquivos',
-        loadComponent: () => import('./pages/uploads/uploads').then((m) => m.Uploads),
-        title: 'Arquivos — AutoStock',
-        data: { icon: 'upload', label: 'Arquivos' },
-      },
     ],
   },
-
   {
     path: '**',
     redirectTo: '',

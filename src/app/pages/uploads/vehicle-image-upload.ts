@@ -1,26 +1,27 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 
 interface UploadedFile {
-  fileName: string;
-  fileDownloadUri: string;
-  fileType: string;
+  name: string;
+  downloadUri: string;
+  type: string;
   size: number;
 }
 
 @Component({
-  selector: 'app-uploads',
+  selector: 'app-vehicle-image-upload',
   imports: [CommonModule],
-  templateUrl: './uploads.html',
-  styleUrl: './uploads.css',
+  templateUrl: './vehicle-image-upload.html',
+  styleUrl: './vehicle-image-upload.css',
 })
-export class Uploads {
+export class VehicleImageUpload {
   private api = inject(ApiService);
   private toast = inject(ToastService);
 
-  readonly apiBase = 'http://localhost:8080/api';
+  vehicleId = input.required<string>();
+  uploaded = output<UploadedFile[]>();
 
   selectedFiles = signal<File[]>([]);
   uploadedFiles = signal<UploadedFile[]>([]);
@@ -51,14 +52,20 @@ export class Uploads {
 
   async upload(): Promise<void> {
     const files = this.selectedFiles();
-    if (!files.length) return;
+    const vehicleId = this.vehicleId();
+
+    if (!files.length || !vehicleId) return;
+
     this.uploading.set(true);
     this.progress.set(0);
+
     const results: UploadedFile[] = [];
 
     for (let i = 0; i < files.length; i++) {
       try {
-        const res = (await this.api.uploadFile(files[i]).toPromise()) as UploadedFile;
+        const res = (await this.api
+          .uploadVehicleImage(vehicleId, files[i])
+          .toPromise()) as UploadedFile;
         if (res) results.push(res);
       } catch {
         /* continue */
@@ -71,7 +78,8 @@ export class Uploads {
       this.progress.set(0);
       this.selectedFiles.set([]);
       this.uploadedFiles.update((prev) => [...results, ...prev]);
-      this.toast.success(`${results.length} arquivo(s) enviado(s)!`);
+      this.uploaded.emit(results);
+      this.toast.success(`${results.length} imagem(ns) enviada(s)!`);
     }, 400);
   }
 

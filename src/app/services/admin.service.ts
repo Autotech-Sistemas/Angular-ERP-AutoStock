@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { Admin, AdminRegisterRequest, AdminResponseDTO } from '../shared/interfaces/models.interface';
+import { AdminResponseDTO, AdminRegisterRequest, Admin } from '../shared/interfaces';
 
 @Injectable({
   providedIn: 'root',

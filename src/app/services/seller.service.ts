@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Seller, SellerRegisterRequest, SellerResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
+import { SellerResponseDTO, SellerRegisterRequest, Seller } from '../shared/interfaces';
 
 @Injectable({
   providedIn: 'root',

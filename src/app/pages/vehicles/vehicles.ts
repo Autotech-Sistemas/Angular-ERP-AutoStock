@@ -10,7 +10,6 @@ import { FormsModule } from '@angular/forms';
 import { VehicleService } from '../../services/vehicle.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CacheService } from '../../services/cache.service';
-import { VehicleResponseDTO, PagedResponse } from '../../shared/interfaces/models.interface';
 import {
   formatCurrency,
   availabilityClass,
@@ -23,6 +22,7 @@ import Swal from 'sweetalert2';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { VehicleForm } from './vehicle-form/vehicle-form';
 import { VehicleView } from "./vehicle-view/vehicle-view";
+import { VehicleResponseDTO, PagedResponse } from '../../shared/interfaces';
 
 @Component({
   selector: 'app-vehicles',

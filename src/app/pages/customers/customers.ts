@@ -9,7 +9,7 @@ import { Modal } from '../../shared/components/modal/modal';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { CustomerService } from '../../services/customer.service';
 import { CustomerAddressService } from '../../services/customer-address.service';
-import { CustomerResponseDTO, CustomerAddressResponseDTO, PagedResponse, Customer } from '../../shared/interfaces/models.interface';
+import { CustomerResponseDTO, CustomerAddressResponseDTO, PagedResponse, Customer } from '../../shared/interfaces';
 
 @Component({
   selector: 'app-customers',

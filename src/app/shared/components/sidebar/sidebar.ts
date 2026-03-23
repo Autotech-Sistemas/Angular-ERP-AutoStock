@@ -51,7 +51,6 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { path: '/agendamentos',    label: 'Agendamentos' },
       { path: '/administradores', label: 'Administradores' },
-      { path: '/arquivos',        label: 'Arquivos' },
     ],
   },
 ];
@@ -102,12 +101,21 @@ export class Sidebar implements OnInit, OnDestroy {
     '/vendas': 'Vendas', '/contratos': 'Contratos', '/clientes': 'Clientes',
     '/vendedores': 'Vendedores', '/filiais': 'Filiais',
     '/agendamentos': 'Agendamentos', '/administradores': 'Administradores',
-    '/arquivos': 'Arquivos',
   };
 
   ngOnInit(): void {
     this.checkMobile();
     this.startApiPing();
+
+    // Expande todas as abas (grupos) inicialmente no modo desktop
+    if (!this.isMobile()) {
+      for (const item of NAV_ITEMS) {
+        if (item.children) {
+          this.expandedPaths.add(item.path);
+        }
+      }
+    }
+
     this.autoExpandActive();
 
     this.router.events.subscribe((ev) => {

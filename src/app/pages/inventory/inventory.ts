@@ -1,4 +1,10 @@
-import { Component, OnInit, inject, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  inject,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormsModule } from '@angular/forms';
 import { InventoryService } from '../../services/inventory.service';
@@ -10,12 +16,13 @@ import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
 import { Pagination } from '../../shared/components/pagination/pagination';
 // 1. Importando todas as tipagens necessárias do seu models.interface
-import { 
-  VehicleResponseDTO, 
-  InventoryItemResponseDTO, 
-  InventoryItem, 
-  PagedResponse 
-} from '../../shared/interfaces/models.interface';
+import {
+  VehicleResponseDTO,
+  InventoryItemResponseDTO,
+  InventoryItem,
+  PagedResponse,
+  InventoryItemRequest,
+} from '../../shared/interfaces';
 
 @Component({
   selector: 'app-inventory',
@@ -25,45 +32,45 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Inventory implements OnInit {
-  private svc    = inject(InventoryService);
+  private svc = inject(InventoryService);
   private vehSvc = inject(VehicleService);
-  private toast  = inject(ToastService);
-  private cache  = inject(CacheService);
-  private fb     = inject(FormBuilder);
-  private cdr    = inject(ChangeDetectorRef);
+  private toast = inject(ToastService);
+  private cache = inject(CacheService);
+  private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
-  loading       = false;
-  modalOpen     = false;
-  
+  loading = false;
+  modalOpen = false;
+
   // 2. Tipando as listas (Substituindo any[])
-  items:    InventoryItemResponseDTO[] = [];
+  items: InventoryItemResponseDTO[] = [];
   filtered: InventoryItemResponseDTO[] = [];
-  vehicles: VehicleResponseDTO[]       = [];
-  
-  page          = 0;
+  vehicles: VehicleResponseDTO[] = [];
+
+  page = 0;
   totalElements = 0;
-  searchQuery   = '';
-  salePreview   = '—';
+  searchQuery = '';
+  salePreview = '—';
 
   fmtCurrency = formatCurrency;
-  fmtDate     = formatDate;
+  fmtDate = formatDate;
 
   // 3. Tipando o parâmetro da função
   calcSalePrice = (i: InventoryItemResponseDTO) => {
     const acq = i.acquisitionPrice ?? 0;
-    const m   = i.profitMargin ?? 0;
+    const m = i.profitMargin ?? 0;
     return m > 0 ? formatCurrency(acq * (1 + m / 100)) : '—';
   };
 
   form = this.fb.group({
-    vehicleId:        [''],
-    licensePlate:     [''],
-    chassis:          [''],
-    supplier:         [''],
+    vehicleId: [''],
+    licensePlate: [''],
+    chassis: [''],
+    supplier: [''],
     acquisitionPrice: [0],
-    profitMargin:     [0],
-    stockEntryDate:   [''],
-    stockExitDate:    [''],
+    profitMargin: [0],
+    stockEntryDate: [''],
+    stockExitDate: [''],
   });
 
   ngOnInit(): void {
@@ -82,7 +89,7 @@ export class Inventory implements OnInit {
     if (!forceRefresh && this.cache.has(key)) {
       // 4. Tipando o retorno do cache corretamente
       const cached = this.cache.get<{ items: InventoryItemResponseDTO[]; total: number }>(key)!;
-      this.items         = cached.items;
+      this.items = cached.items;
       this.totalElements = cached.total;
       this.applyFilter();
       this.cdr.markForCheck();
@@ -96,9 +103,9 @@ export class Inventory implements OnInit {
     this.svc.getAll(page).subscribe({
       next: (r: PagedResponse<InventoryItemResponseDTO>) => {
         // Acessando a chave do HATEOAS usando a notação de colchetes
-        this.items         = r._embedded?.['inventoryItemResponseDTOList'] ?? [];
+        this.items = r._embedded?.['inventoryItemResponseDTOList'] ?? [];
         this.totalElements = r.page?.totalElements ?? 0;
-        
+
         this.cache.set(key, { items: this.items, total: this.totalElements });
         this.applyFilter();
         this.loading = false;
@@ -118,7 +125,7 @@ export class Inventory implements OnInit {
 
   loadVehicles(): void {
     const key = 'vehicles_all';
-    
+
     if (this.cache.has(key)) {
       this.vehicles = this.cache.get<VehicleResponseDTO[]>(key)!;
       this.cdr.markForCheck();
@@ -128,7 +135,7 @@ export class Inventory implements OnInit {
     // Usando PagedResponse diretamente
     this.vehSvc.getAll(0, 200).subscribe((r: PagedResponse<VehicleResponseDTO>) => {
       this.vehicles = r._embedded?.['vehicleResponseDTOList'] ?? [];
-      
+
       this.cache.set(key, this.vehicles);
       this.cdr.markForCheck();
     });
@@ -152,34 +159,39 @@ export class Inventory implements OnInit {
 
   calcPreview(): void {
     const acq = this.form.value.acquisitionPrice ?? 0;
-    const m   = this.form.value.profitMargin ?? 0;
+    const m = this.form.value.profitMargin ?? 0;
     this.salePreview = m > 0 ? formatCurrency(acq * (1 + m / 100)) : '—';
     this.cdr.markForCheck();
   }
 
   openNew(): void {
     this.form.reset({
-      vehicleId: '', licensePlate: '', chassis: '', supplier: '',
-      acquisitionPrice: 0, profitMargin: 0, stockEntryDate: '', stockExitDate: '',
+      vehicleId: '',
+      licensePlate: '',
+      chassis: '',
+      supplier: '',
+      acquisitionPrice: 0,
+      profitMargin: 0,
+      stockEntryDate: '',
+      stockExitDate: '',
     });
     this.salePreview = '—';
-    this.modalOpen   = true;
+    this.modalOpen = true;
     this.cdr.markForCheck();
   }
 
   save(): void {
     const v = this.form.value;
-    
+
     // 6. Construindo o DTO de Input e garantindo a compatibilidade de tipos
-    const body: InventoryItem = {
-      vehicle:          { id: v.vehicleId ?? undefined }, // Referência parcial do veículo
-      licensePlate:     v.licensePlate ?? undefined,
-      chassis:          v.chassis ?? undefined,
-      supplier:         v.supplier ?? undefined,
+    const body: InventoryItemRequest = {
+      vehicleId: v.vehicleId ?? '',
+      licensePlate: v.licensePlate ?? undefined,
+      chassis: v.chassis ?? undefined,
+      supplier: v.supplier ?? undefined,
       acquisitionPrice: v.acquisitionPrice ?? 0,
-      profitMargin:     v.profitMargin ?? 0,
-      stockEntryDate:   v.stockEntryDate || undefined,
-      stockExitDate:    v.stockExitDate || undefined,
+      profitMargin: v.profitMargin ?? 0,
+      stockEntryDate: v.stockEntryDate || undefined,
     };
 
     // Removido o (body as any)
@@ -200,12 +212,15 @@ export class Inventory implements OnInit {
   // 7. Tipando a função de apagar (substituindo o any)
   async delete(i: InventoryItemResponseDTO): Promise<void> {
     const r = await Swal.fire({
-      title: 'Remover do estoque?', icon: 'warning',
-      showCancelButton: true, confirmButtonText: 'Sim',
-      cancelButtonText: 'Não', confirmButtonColor: '#dc2626',
+      title: 'Remover do estoque?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim',
+      cancelButtonText: 'Não',
+      confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
-    
+
     // Passando o ID garantido com non-null assertion (!) pois sabemos que DTOs que vêm do back sempre têm ID
     this.svc.delete(i.id!).subscribe({
       next: () => {

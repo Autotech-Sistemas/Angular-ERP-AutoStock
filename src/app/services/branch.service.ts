@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { Branch, BranchResponseDTO } from '../shared/interfaces/models.interface';
 import { ApiService } from './api.service';
+import { BranchResponseDTO, Branch } from '../shared/interfaces';
 
 @Injectable({
   providedIn: 'root',

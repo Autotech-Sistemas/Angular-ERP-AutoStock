@@ -2,7 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from '../../services/api.service';
-import { LoginRequest, LoginResponse, CurrentUser } from '../../shared/interfaces/models.interface';
+import { CurrentUser, LoginRequest, LoginResponse } from '../../shared/interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

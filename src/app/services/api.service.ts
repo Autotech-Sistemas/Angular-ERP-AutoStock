@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { PagedResponse } from '../shared/interfaces/models.interface';
+import { PagedResponse } from '../shared/interfaces';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -46,21 +46,15 @@ export class ApiService {
 
   // ─── GESTÃO DE FICHEIROS (FILES) ──────────────────────────────────────────────
 
-  uploadFile(file: File): Observable<unknown> {
+  uploadVehicleImage(vehicleId: string, file: File): Observable<unknown> {
     const fd = new FormData();
     fd.append('file', file);
-    return this.http.post(`${this.BASE}/file/upload-file`, fd);
+    return this.http.post(`${this.BASE}/file/upload-vehicle-image/${vehicleId}`, fd);
   }
 
-  uploadMultipleFiles(files: File[]): Observable<unknown> {
+  uploadMultipleVehicleImages(vehicleId: string, files: File[]): Observable<unknown> {
     const fd = new FormData();
-    files.forEach(file => fd.append('files', file)); 
-    return this.http.post(`${this.BASE}/file/upload-multiple-files`, fd);
-  }
-
-  downloadFile(fileName: string): Observable<Blob> {
-    return this.http.get(`${this.BASE}/file/download-file/${fileName}`, {
-      responseType: 'blob'
-    });
+    files.forEach((file) => fd.append('files', file));
+    return this.http.post(`${this.BASE}/file/upload-multiple-vehicle-images/${vehicleId}`, fd);
   }
 }

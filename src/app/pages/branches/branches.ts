@@ -12,12 +12,7 @@ import { CacheService } from '../../services/cache.service';
 import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
 import { BranchService } from '../../services/branch.service';
-import {
-  BranchResponseDTO,
-  PagedResponse,
-  Branch,
-  BranchAddress
-} from '../../shared/interfaces/models.interface';
+import { BranchResponseDTO, PagedResponse, Branch, BranchAddress } from '../../shared/interfaces';
 
 @Component({
   selector: 'app-branches',

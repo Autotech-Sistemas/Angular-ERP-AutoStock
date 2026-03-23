@@ -8,7 +8,7 @@ import {
   vehicleStatusLabel,
   fuelLabel,
 } from '../../../shared/helpers/formatters.helper';
-import { VehicleResponseDTO } from '../../../shared/interfaces/models.interface';
+import { VehicleResponseDTO } from '../../../shared/interfaces/vehicle.models';
 
 @Component({
   selector: 'app-vehicle-view',

@@ -8,6 +8,6 @@ export class DashboardService {
   constructor(private api: ApiService) {}
 
   getSummary() {
-    return this.api.getAll<any>('/dashboard/summary');
+    return this.api.get<any>('/dashboard/summary');
   }
 }
