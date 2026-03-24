@@ -1,7 +1,6 @@
 export * from './common.models';
 export * from './auth.models';
 export * from './dashboard.models';
-export * from './admin.models';
 export * from './branch.models';
 export * from './vehicle.models';
 export * from './customer.models';

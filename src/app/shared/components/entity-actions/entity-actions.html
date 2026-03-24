@@ -1,0 +1,46 @@
+<div class="entity-actions">
+  @if (showView) {
+    <button
+      class="btn-secondary px-2"
+      (click)="view.emit()"
+      [attr.aria-label]="viewAriaLabel"
+      [attr.title]="viewTitle"
+      type="button"
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </button>
+  }
+
+  @if (showEdit) {
+    <button
+      class="btn-edit px-3"
+      (click)="edit.emit()"
+      [attr.aria-label]="editAriaLabel"
+      type="button"
+    >
+      {{ editLabel }}
+    </button>
+  }
+
+  @if (showDelete) {
+    <button
+      class="btn-danger px-3"
+      (click)="delete.emit()"
+      [attr.aria-label]="deleteAriaLabel"
+      type="button"
+    >
+      {{ deleteLabel }}
+    </button>
+  }
+</div>

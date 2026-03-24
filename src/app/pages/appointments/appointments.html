@@ -64,7 +64,10 @@
               <tr>
                 @for (j of [1, 2, 3, 4, 5, 6]; track j) {
                   <td>
-                    <div class="h-4 rounded animate-pulse" style="background: var(--surface-tertiary)"></div>
+                    <div
+                      class="h-4 rounded animate-pulse"
+                      style="background: var(--surface-tertiary)"
+                    ></div>
                   </td>
                 }
               </tr>
@@ -91,7 +94,7 @@
                     class="form-input text-xs"
                     style="width: 140px; padding-top: 4px; padding-bottom: 4px"
                     [value]="a.appointmentStatus"
-                    (change)="updateStatus(a, $event)"
+                    (change)="updateStatus(a, $any($event.target).value)"
                     [attr.aria-label]="'Status do agendamento de ' + (a.customer?.name ?? '')"
                   >
                     <option value="PENDING">Pendente</option>
@@ -100,13 +103,14 @@
                   </select>
                 </td>
                 <td>
-                  <button
-                    class="btn-danger"
-                    (click)="delete(a)"
-                    [attr.aria-label]="'Excluir agendamento de ' + (a.customer?.name ?? '')"
-                  >
-                    Excluir
-                  </button>
+                  <app-entity-actions
+                    [viewAriaLabel]="'Visualizar agendamento de ' + (a.customer?.name ?? '')"
+                    [editAriaLabel]="'Editar agendamento de ' + (a.customer?.name ?? '')"
+                    [deleteAriaLabel]="'Excluir agendamento de ' + (a.customer?.name ?? '')"
+                    (view)="openView(a)"
+                    (edit)="openEdit(a)"
+                    (delete)="delete(a)"
+                  />
                 </td>
               </tr>
             }
@@ -118,7 +122,9 @@
       class="p-4 flex flex-wrap items-center justify-between gap-3"
       style="border-top: 1px solid var(--surface-border)"
     >
-      <span class="text-xs" style="color: var(--text-muted)">{{ totalElements }} agendamento(s)</span>
+      <span class="text-xs" style="color: var(--text-muted)"
+        >{{ totalElements }} agendamento(s)</span
+      >
       <app-pagination
         [totalElements]="totalElements"
         [pageSize]="12"
@@ -128,7 +134,11 @@
     </div>
   </div>
 
-  <app-modal title="Novo Agendamento" [open]="modalOpen" (closeModal)="modalOpen = false">
+  <app-modal
+    [title]="editId ? 'Editar Agendamento' : 'Novo Agendamento'"
+    [open]="modalOpen"
+    (closeModal)="modalOpen = false"
+  >
     <ng-container slot="body">
       <form [formGroup]="form" class="grid grid-cols-2 gap-4">
         <div>
@@ -171,6 +181,47 @@
     <ng-container slot="footer">
       <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
       <button class="btn-brand" (click)="save()">Agendar</button>
+    </ng-container>
+  </app-modal>
+
+  <app-modal
+    title="Detalhes do Agendamento"
+    [open]="viewModalOpen"
+    (closeModal)="viewModalOpen = false"
+  >
+    <ng-container slot="body">
+      @if (selectedAppointment) {
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="form-label">Data</p>
+            <div class="form-input">{{ fmtDate(selectedAppointment.date) }}</div>
+          </div>
+          <div>
+            <p class="form-label">Status</p>
+            <div class="form-input">
+              {{ aptStatusLabel(selectedAppointment.appointmentStatus) }}
+            </div>
+          </div>
+          <div>
+            <p class="form-label">Tipo</p>
+            <div class="form-input">{{ aptTypeLabel(selectedAppointment.appointmentType) }}</div>
+          </div>
+          <div>
+            <p class="form-label">Vendedor</p>
+            <div class="form-input">{{ selectedAppointment.seller?.name ?? '—' }}</div>
+          </div>
+          <div class="col-span-2">
+            <p class="form-label">Cliente</p>
+            <div class="form-input">{{ selectedAppointment.customer?.name ?? '—' }}</div>
+          </div>
+        </div>
+      }
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="openEdit(selectedAppointment!); viewModalOpen = false">
+        Editar
+      </button>
+      <button class="btn-brand" (click)="viewModalOpen = false">Fechar</button>
     </ng-container>
   </app-modal>
 </div>

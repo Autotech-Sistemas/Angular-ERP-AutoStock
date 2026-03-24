@@ -46,9 +46,9 @@
   </div>
 
   <!-- ── Nav ─────────────────────────────────────────────────────────────── -->
-  <nav class="sb-nav custom-scrollbar" aria-label="Navegação principal">
+  <nav class="sb-nav custom-scrollbar" aria-label="Navega&ccedil;&atilde;o principal">
 
-    @for (item of navItems; track item.path) {
+    @for (item of navItems; track item.path; let idx = $index) {
 
       @if (item.children && item.children.length) {
         <!-- Item expansível (acordeão) -->
@@ -60,6 +60,7 @@
             (click)="toggleExpand(item.path)"
             [attr.aria-expanded]="isExpanded(item.path)"
             [attr.aria-label]="item.label"
+            [attr.aria-controls]="'submenu-' + idx"
           >
             <span class="sb-group-icon" aria-hidden="true" [innerHTML]="getIcon(item.icon)"></span>
             <span class="sb-group-label">{{ item.label }}</span>
@@ -81,7 +82,7 @@
 
           <!-- Subitens com linha vertical + conectores -->
           @if (isExpanded(item.path)) {
-            <ul class="sb-children" [attr.aria-label]="item.label + ' submenu'">
+            <ul class="sb-children" [id]="'submenu-' + idx" [attr.aria-label]="item.label + ' submenu'">
               <!-- Linha vertical -->
               <div class="sb-vline" aria-hidden="true"></div>
 
@@ -149,7 +150,7 @@
         #searchRef
         type="text"
         class="sb-modal-input"
-        placeholder="Buscar telas, seções ou recursos..."
+        placeholder="Buscar telas, se&ccedil;&otilde;es ou recursos..."
         [(ngModel)]="searchQuery"
         (input)="onSearch()"
         autocomplete="off"
@@ -170,8 +171,8 @@
                stroke-width="1.5" aria-hidden="true">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          <p class="sb-modal-empty-title">Digite para começar a buscar.</p>
-          <p class="sb-modal-empty-hint">Ex: 'veículos', 'contratos', 'agendamentos'</p>
+          <p class="sb-modal-empty-title">Digite para come&ccedil;ar a buscar.</p>
+          <p class="sb-modal-empty-hint">Ex: 've&iacute;culos', 'contratos', 'agendamentos'</p>
         </div>
       } @else if (searchResults().length === 0) {
         <div class="sb-modal-empty">

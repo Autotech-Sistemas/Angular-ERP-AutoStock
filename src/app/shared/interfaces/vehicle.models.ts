@@ -37,6 +37,7 @@ export interface VehicleSpecificDetailResponseDTO extends VehicleSpecificDetail 
 export interface VehicleRequest {
   brand: string;
   model: string;
+  modelYear?: string;
   type: VehicleType;
   category: VehicleCategory;
   manufactureYear: string;

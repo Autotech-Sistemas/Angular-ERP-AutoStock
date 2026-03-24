@@ -35,7 +35,13 @@ export interface Seller {
 export interface SellerResponseDTO {
   id?: string;
   name?: string;
-  phone?: string;
   email?: string;
+  phone?: string;
+  hireDate?: string;
+  salary?: number;
+  commissionRate?: number;
+  status?: string;
+  enabled?: boolean;
+  role?: string;
   _links?: Links;
 }

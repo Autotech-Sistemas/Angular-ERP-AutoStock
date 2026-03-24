@@ -23,6 +23,7 @@ import { Pagination } from '../../shared/components/pagination/pagination';
 import { AppointmentService } from '../../services/appointment.service';
 import { CustomerService } from '../../services/customer.service';
 import { SellerService } from '../../services/seller.service';
+import { EntityActions } from '../../shared/components/entity-actions/entity-actions';
 import {
   AppointmentResponseDTO,
   CustomerResponseDTO,
@@ -35,7 +36,7 @@ import {
 
 @Component({
   selector: 'app-appointments',
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, Modal, Pagination],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Modal, Pagination, EntityActions],
   templateUrl: './appointments.html',
   styleUrl: './appointments.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,11 +52,14 @@ export class Appointments implements OnInit {
 
   loading = false;
   modalOpen = false;
+  viewModalOpen = false;
   items: AppointmentResponseDTO[] = [];
   customers: CustomerResponseDTO[] = [];
   sellers: SellerResponseDTO[] = [];
   page = 0;
   totalElements = 0;
+  editId = '';
+  selectedAppointment: AppointmentResponseDTO | null = null;
 
   fmtDate = formatDate;
   aptTypeClass = aptTypeClass;
@@ -116,6 +120,8 @@ export class Appointments implements OnInit {
   }
 
   openNew(): void {
+    this.editId = '';
+    this.selectedAppointment = null;
     const custKey = 'customers_all';
     const selKey = 'sellers_all';
 
@@ -156,13 +162,49 @@ export class Appointments implements OnInit {
     this.cdr.markForCheck();
   }
 
-  updateStatus(a: AppointmentResponseDTO, event: Event): void {
-    const status = (event.target as HTMLSelectElement).value as AppointmentStatus;
+  openView(a: AppointmentResponseDTO): void {
+    this.selectedAppointment = a;
+    this.viewModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  openEdit(a: AppointmentResponseDTO): void {
+    this.selectedAppointment = a;
+    this.editId = a.id ?? '';
+    this.openNew();
+    this.editId = a.id ?? '';
+    this.selectedAppointment = a;
+    this.form.reset({
+      customerId: a.customer?.id ?? '',
+      sellerId: a.seller?.id ?? '',
+      date: a.date ? a.date.substring(0, 10) : '',
+      appointmentType: a.appointmentType ?? 'TEST_DRIVE',
+      appointmentStatus: a.appointmentStatus ?? 'PENDING',
+    });
+    this.modalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  updateStatus(a: AppointmentResponseDTO, newStatus: string): void {
+    const status = newStatus as AppointmentStatus;
+
+    const body: AppointmentRequest = {
+      date: a.date!,
+      appointmentType: a.appointmentType!,
+      appointmentStatus: status,
+      customerId: a.customer?.id ?? '',
+      sellerId: a.seller?.id ?? '',
+    };
 
     this.cache.invalidate(this.cacheKey(this.page));
-    this.svc.update(a.id!, { appointmentStatus: status }).subscribe({
-      next: () => this.toast.info('Status atualizado!'),
-      error: (e) => this.toast.error(e?.message ?? 'Erro'),
+    this.svc.update(a.id!, body).subscribe({
+      next: () => {
+        this.toast.info('Status atualizado!');
+      },
+      error: (e) => {
+        this.toast.error(e?.error?.message || e?.message || 'Acesso negado ou erro ao atualizar.');
+        this.load(this.page, true); // Recarrega a tabela para reverter o select visualmente
+      },
     });
   }
 
@@ -182,10 +224,13 @@ export class Appointments implements OnInit {
       sellerId: v.sellerId!,
     };
 
-    this.svc.create(body).subscribe({
+    const request = this.editId ? this.svc.update(this.editId, body) : this.svc.create(body);
+
+    request.subscribe({
       next: () => {
-        this.toast.success('Agendamento criado!');
+        this.toast.success(this.editId ? 'Agendamento atualizado!' : 'Agendamento criado!');
         this.modalOpen = false;
+        this.editId = '';
         this.invalidateAllPages();
         this.load(this.page, true);
       },

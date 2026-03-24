@@ -10,10 +10,11 @@ import { Pagination } from '../../shared/components/pagination/pagination';
 import { CustomerService } from '../../services/customer.service';
 import { CustomerAddressService } from '../../services/customer-address.service';
 import { CustomerResponseDTO, CustomerAddressResponseDTO, PagedResponse, Customer } from '../../shared/interfaces';
+import { EntityActions } from '../../shared/components/entity-actions/entity-actions';
 
 @Component({
   selector: 'app-customers',
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, Modal, Pagination],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Modal, Pagination, EntityActions],
   templateUrl: './customers.html',
   styleUrl: './customers.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,6 +29,7 @@ export class Customers implements OnInit {
 
   loading       = false;
   modalOpen     = false;
+  viewModalOpen = false;
   activeTab     = 'list';
   
   items:     CustomerResponseDTO[]        = [];
@@ -35,6 +37,7 @@ export class Customers implements OnInit {
   addresses: CustomerAddressResponseDTO[] = [];
   
   editId        = '';
+  selectedCustomer: CustomerResponseDTO | null = null;
   searchQuery   = '';
   page          = 0;
   totalElements = 0;
@@ -155,8 +158,15 @@ export class Customers implements OnInit {
 
   openEdit(c: CustomerResponseDTO): void {
     this.editId = c.id!;
+    this.selectedCustomer = c;
     this.form.patchValue({ ...c });
     this.modalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  openView(c: CustomerResponseDTO): void {
+    this.selectedCustomer = c;
+    this.viewModalOpen = true;
     this.cdr.markForCheck();
   }
 

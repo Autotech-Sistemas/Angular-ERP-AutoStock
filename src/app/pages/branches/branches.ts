@@ -13,10 +13,11 @@ import Swal from 'sweetalert2';
 import { Modal } from '../../shared/components/modal/modal';
 import { BranchService } from '../../services/branch.service';
 import { BranchResponseDTO, PagedResponse, Branch, BranchAddress } from '../../shared/interfaces';
+import { EntityActions } from '../../shared/components/entity-actions/entity-actions';
 
 @Component({
   selector: 'app-branches',
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, Modal],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, Modal, EntityActions],
   templateUrl: './branches.html',
   styleUrl: './branches.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,11 +31,13 @@ export class Branches implements OnInit {
 
   loading = false;
   modalOpen = false;
+  viewModalOpen = false;
 
   items: BranchResponseDTO[] = [];
   filtered: BranchResponseDTO[] = [];
 
   editId = '';
+  selectedBranch: BranchResponseDTO | null = null;
   searchQuery = '';
   page = 0;
   totalElements = 0;
@@ -136,6 +139,7 @@ export class Branches implements OnInit {
     const b = this.items.find(item => item.id === id);
     if (!b) return;
 
+    this.selectedBranch = b;
     this.editId = b.id!;
     this.form.patchValue({
       name: b.name,
@@ -155,6 +159,12 @@ export class Branches implements OnInit {
       complement: b.address?.complement
     });
     this.modalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  openView(b: BranchResponseDTO): void {
+    this.selectedBranch = b;
+    this.viewModalOpen = true;
     this.cdr.markForCheck();
   }
 

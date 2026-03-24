@@ -94,7 +94,10 @@
               <tr>
                 @for (j of [1, 2, 3, 4, 5, 6, 7, 8, 9]; track j) {
                   <td>
-                    <div class="h-4 rounded animate-pulse" style="background: var(--surface-tertiary)"></div>
+                    <div
+                      class="h-4 rounded animate-pulse"
+                      style="background: var(--surface-tertiary)"
+                    ></div>
                   </td>
                 }
               </tr>
@@ -127,13 +130,29 @@
                 <td class="font-semibold" style="color: #4ade80">{{ calcSalePrice(i) }}</td>
                 <td>{{ fmtDate(i.stockEntryDate) }}</td>
                 <td>
-                  <button
-                    class="btn-danger"
-                    (click)="delete(i)"
-                    [attr.aria-label]="'Excluir item ' + (i.licensePlate ?? '')"
-                  >
-                    Excluir
-                  </button>
+                  <div class="flex justify-end gap-1.5">
+                    <button class="btn-secondary px-2" (click)="openView(i)" title="Ver detalhes">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                    </button>
+                    <button class="btn-edit px-3" (click)="openEdit(i)">Editar</button>
+                    <button
+                      class="btn-danger px-3"
+                      (click)="delete(i)"
+                      [attr.aria-label]="'Excluir item ' + (i.licensePlate ?? '')"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </td>
               </tr>
             }
@@ -161,19 +180,38 @@
       <form [formGroup]="form" class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
           <label class="form-label" for="inv-veh">Veículo *</label>
-          <select id="inv-veh" class="form-input" formControlName="vehicleId">
+          <select
+            id="inv-veh"
+            class="form-input"
+            [class.border-red-500]="isInvalidCreate('vehicleId')"
+            formControlName="vehicleId"
+          >
+            <option value="">Selecione um veículo...</option>
             @for (v of vehicles; track v.id) {
               <option [value]="v.id">{{ v.brand }} {{ v.model }}</option>
             }
           </select>
+          @if (isInvalidCreate('vehicleId')) {
+            <span class="text-xs text-red-500 mt-1 block">Selecione um veículo do estoque.</span>
+          }
         </div>
         <div>
           <label class="form-label" for="inv-plate">Placa</label>
-          <input id="inv-plate" class="form-input" formControlName="licensePlate" placeholder="ABC-1234" />
+          <input
+            id="inv-plate"
+            class="form-input"
+            formControlName="licensePlate"
+            placeholder="ABC-1234"
+          />
         </div>
         <div>
           <label class="form-label" for="inv-chassis">Chassi</label>
-          <input id="inv-chassis" class="form-input" formControlName="chassis" placeholder="9BW..." />
+          <input
+            id="inv-chassis"
+            class="form-input"
+            formControlName="chassis"
+            placeholder="9BW..."
+          />
         </div>
         <div>
           <label class="form-label" for="inv-sup">Fornecedor</label>
@@ -185,10 +223,17 @@
             id="inv-acq"
             type="number"
             class="form-input"
+            [class.border-red-500]="isInvalidCreate('acquisitionPrice')"
             formControlName="acquisitionPrice"
             step="0.01"
+            min="0"
             (input)="calcPreview()"
           />
+          @if (isInvalidCreate('acquisitionPrice')) {
+            <span class="text-xs text-red-500 mt-1 block"
+              >Informe um valor de aquisição válido.</span
+            >
+          }
         </div>
         <div>
           <label class="form-label" for="inv-margin">Margem (%)</label>
@@ -196,14 +241,22 @@
             id="inv-margin"
             type="number"
             class="form-input"
+            [class.border-red-500]="isInvalidCreate('profitMargin')"
             formControlName="profitMargin"
             step="0.1"
+            min="0"
             (input)="calcPreview()"
           />
+          @if (isInvalidCreate('profitMargin')) {
+            <span class="text-xs text-red-500 mt-1 block">A margem não pode ser negativa.</span>
+          }
         </div>
         <div>
           <label class="form-label">Preço Venda (calculado)</label>
-          <div class="form-input font-semibold" style="color: #4ade80; background: var(--surface); cursor: default">
+          <div
+            class="form-input font-semibold"
+            style="color: #4ade80; background: var(--surface); cursor: default"
+          >
             {{ salePreview }}
           </div>
         </div>
@@ -220,6 +273,257 @@
     <ng-container slot="footer">
       <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
       <button class="btn-brand" (click)="save()">Salvar</button>
+    </ng-container>
+  </app-modal>
+
+  <!-- Modal de Edição -->
+  <app-modal
+    title="Editar Item do Estoque"
+    [open]="editModalOpen"
+    (closeModal)="editModalOpen = false"
+  >
+    <ng-container slot="body">
+      <form [formGroup]="editForm" class="grid grid-cols-2 gap-4">
+        <div class="col-span-2 p-3 rounded-lg" style="background: var(--surface-tertiary)">
+          <p
+            class="text-xs font-medium uppercase tracking-wider mb-1"
+            style="color: var(--text-muted)"
+          >
+            Veículo em Estoque
+          </p>
+          <p class="font-semibold" style="color: var(--text-primary)">
+            {{ selectedItem?.vehicle?.brand }} {{ selectedItem?.vehicle?.model }} ({{
+              selectedItem?.vehicle?.manufactureYear
+            }})
+          </p>
+        </div>
+
+        <div>
+          <label class="form-label" for="e-plate">Placa</label>
+          <input
+            id="e-plate"
+            class="form-input"
+            formControlName="licensePlate"
+            placeholder="ABC-1234"
+          />
+        </div>
+        <div>
+          <label class="form-label" for="e-chassis">Chassi</label>
+          <input id="e-chassis" class="form-input" formControlName="chassis" placeholder="9BW..." />
+        </div>
+        <div>
+          <label class="form-label" for="e-sup">Fornecedor</label>
+          <input id="e-sup" class="form-input" formControlName="supplier" />
+        </div>
+        <div>
+          <label class="form-label" for="e-acq">Preço Aquisição (R$)</label>
+          <input
+            id="e-acq"
+            type="number"
+            class="form-input"
+            [class.border-red-500]="isInvalidEdit('acquisitionPrice')"
+            formControlName="acquisitionPrice"
+            step="0.01"
+            min="0"
+            (input)="calcEditPreview()"
+          />
+          @if (isInvalidEdit('acquisitionPrice')) {
+            <span class="text-xs text-red-500 mt-1 block"
+              >Informe um valor de aquisição válido.</span
+            >
+          }
+        </div>
+        <div>
+          <label class="form-label" for="e-margin">Margem de Lucro (%)</label>
+          <input
+            id="e-margin"
+            type="number"
+            class="form-input"
+            [class.border-red-500]="isInvalidEdit('profitMargin')"
+            formControlName="profitMargin"
+            step="0.1"
+            min="0"
+            (input)="calcEditPreview()"
+          />
+          @if (isInvalidEdit('profitMargin')) {
+            <span class="text-xs text-red-500 mt-1 block">A margem não pode ser negativa.</span>
+          }
+        </div>
+        <div>
+          <label class="form-label">Preço Venda (calculado)</label>
+          <div
+            class="form-input font-semibold"
+            style="color: #4ade80; background: var(--surface); cursor: default"
+          >
+            {{ salePreview }}
+          </div>
+        </div>
+        <div>
+          <label class="form-label" for="e-entry">Data Entrada</label>
+          <input id="e-entry" type="date" class="form-input" formControlName="stockEntryDate" />
+        </div>
+        <div>
+          <label class="form-label" for="e-exit">Data Saída (Vendido)</label>
+          <input id="e-exit" type="date" class="form-input" formControlName="stockExitDate" />
+        </div>
+      </form>
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="editModalOpen = false">Cancelar</button>
+      <button class="btn-brand" (click)="saveEdit()">Salvar Alterações</button>
+    </ng-container>
+  </app-modal>
+
+  <!-- Modal de Visualização -->
+  <app-modal
+    title="Detalhes do Estoque"
+    [open]="viewModalOpen"
+    (closeModal)="viewModalOpen = false"
+  >
+    <ng-container slot="body">
+      @if (selectedItem) {
+        <div class="space-y-6" style="max-height: 65vh; overflow-y: auto; padding-right: 0.5rem">
+          <!-- Imagem do Veículo (se houver) -->
+          @if (selectedItem.vehicle?.images && selectedItem.vehicle!.images!.length > 0) {
+            <div
+              class="rounded-xl overflow-hidden"
+              style="aspect-ratio: 16/7; border: 1px solid var(--surface-border)"
+            >
+              <img
+                [src]="selectedItem.vehicle!.images![0].downloadUri"
+                alt="Foto do veículo"
+                style="width: 100%; height: 100%; object-fit: cover"
+              />
+            </div>
+          }
+
+          <!-- Resumo de título -->
+          <div>
+            <h3 class="text-xl font-bold font-heading" style="color: var(--text-primary)">
+              {{ selectedItem.vehicle?.brand }} {{ selectedItem.vehicle?.model }}
+            </h3>
+            <p
+              class="text-sm font-medium uppercase tracking-wider mt-1"
+              style="color: var(--text-muted)"
+            >
+              Fab/Mod: {{ selectedItem.vehicle?.manufactureYear }} /
+              {{ $any(selectedItem.vehicle)?.modelYear }}
+            </p>
+          </div>
+
+          <!-- Dados Identificadores -->
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div
+              class="p-3 rounded-lg border"
+              style="background: var(--surface); border-color: var(--surface-border)"
+            >
+              <p
+                class="text-xs uppercase tracking-wider mb-1 font-bold"
+                style="color: var(--text-muted)"
+              >
+                Placa
+              </p>
+              <p class="font-mono font-medium" style="color: var(--text-primary)">
+                {{ selectedItem.licensePlate || 'Sem Placa' }}
+              </p>
+            </div>
+            <div
+              class="p-3 rounded-lg border"
+              style="background: var(--surface); border-color: var(--surface-border)"
+            >
+              <p
+                class="text-xs uppercase tracking-wider mb-1 font-bold"
+                style="color: var(--text-muted)"
+              >
+                Chassi
+              </p>
+              <p class="font-mono font-medium" style="color: var(--text-primary)">
+                {{ selectedItem.chassis || 'Não Informado' }}
+              </p>
+            </div>
+            <div
+              class="p-3 rounded-lg border"
+              style="background: var(--surface); border-color: var(--surface-border)"
+            >
+              <p
+                class="text-xs uppercase tracking-wider mb-1 font-bold"
+                style="color: var(--text-muted)"
+              >
+                Cor
+              </p>
+              <p class="font-medium" style="color: var(--text-primary)">
+                {{ selectedItem.vehicle?.color || 'N/A' }}
+              </p>
+            </div>
+            <div
+              class="p-3 rounded-lg border"
+              style="background: var(--surface); border-color: var(--surface-border)"
+            >
+              <p
+                class="text-xs uppercase tracking-wider mb-1 font-bold"
+                style="color: var(--text-muted)"
+              >
+                Combustível
+              </p>
+              <p class="font-medium" style="color: var(--text-primary)">
+                {{ selectedItem.vehicle?.fuelType || 'N/A' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Relatório Financeiro do Item -->
+          <div class="p-4 rounded-xl" style="background: var(--surface-tertiary)">
+            <p class="text-xs uppercase font-bold tracking-wider mb-3" style="color: var(--brand)">
+              Resumo Financeiro
+            </p>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between items-center">
+                <span style="color: var(--text-muted)">Fornecedor</span>
+                <span class="font-medium" style="color: var(--text-primary)">{{
+                  selectedItem.supplier || 'N/A'
+                }}</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span style="color: var(--text-muted)">Data de Entrada</span>
+                <span class="font-medium font-mono text-xs" style="color: var(--text-primary)">{{
+                  fmtDate(selectedItem.stockEntryDate) || '—'
+                }}</span>
+              </div>
+              <div class="flex justify-between items-center pt-2">
+                <span style="color: var(--text-muted)">Custo de Aquisição</span>
+                <span class="font-medium" style="color: var(--text-primary)">{{
+                  fmtCurrency(selectedItem.acquisitionPrice)
+                }}</span>
+              </div>
+              <div class="flex justify-between items-center pb-2">
+                <span style="color: var(--text-muted)">Margem de Lucro Estipulada</span>
+                <span class="font-medium" style="color: #60a5fa">{{
+                  selectedItem.profitMargin ? selectedItem.profitMargin + '%' : 'N/A'
+                }}</span>
+              </div>
+              <div
+                class="flex justify-between items-center pt-3 border-t border-dashed"
+                style="border-color: var(--surface-border)"
+              >
+                <span
+                  class="font-bold uppercase tracking-wider text-xs"
+                  style="color: var(--text-primary)"
+                  >Preço de Venda Esperado</span
+                >
+                <span class="font-bold text-lg" style="color: #4ade80">{{
+                  calcSalePrice(selectedItem)
+                }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="openEdit(selectedItem!); viewModalOpen = false">
+        Editar Item
+      </button>
+      <button class="btn-brand" (click)="viewModalOpen = false">Fechar</button>
     </ng-container>
   </app-modal>
 </div>

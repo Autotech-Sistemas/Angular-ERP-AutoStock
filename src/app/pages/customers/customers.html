@@ -164,22 +164,14 @@
                     </td>
                     <td>{{ fmtDate(c.registrationDate) }}</td>
                     <td>
-                      <div class="flex gap-1.5">
-                        <button
-                          class="btn-edit"
-                          (click)="openEdit(c)"
-                          [attr.aria-label]="'Editar ' + c.name"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          class="btn-danger"
-                          (click)="delete(c)"
-                          [attr.aria-label]="'Excluir ' + c.name"
-                        >
-                          Excluir
-                        </button>
-                      </div>
+                      <app-entity-actions
+                        [viewAriaLabel]="'Visualizar cliente ' + c.name"
+                        [editAriaLabel]="'Editar cliente ' + c.name"
+                        [deleteAriaLabel]="'Excluir cliente ' + c.name"
+                        (view)="openView(c)"
+                        (edit)="openEdit(c)"
+                        (delete)="delete(c)"
+                      />
                     </td>
                   </tr>
                 }
@@ -322,6 +314,55 @@
     <ng-container slot="footer">
       <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
       <button class="btn-brand" (click)="save()">Salvar</button>
+    </ng-container>
+  </app-modal>
+
+  <app-modal
+    title="Detalhes do Cliente"
+    [open]="viewModalOpen"
+    (closeModal)="viewModalOpen = false"
+  >
+    <ng-container slot="body">
+      @if (selectedCustomer) {
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div class="col-span-2">
+            <p class="form-label">Nome</p>
+            <div class="form-input">{{ selectedCustomer.name }}</div>
+          </div>
+          <div>
+            <p class="form-label">CPF</p>
+            <div class="form-input">{{ selectedCustomer.cpf }}</div>
+          </div>
+          <div>
+            <p class="form-label">Telefone</p>
+            <div class="form-input">{{ selectedCustomer.phone }}</div>
+          </div>
+          <div>
+            <p class="form-label">Email</p>
+            <div class="form-input">{{ selectedCustomer.email }}</div>
+          </div>
+          <div>
+            <p class="form-label">Nascimento</p>
+            <div class="form-input">{{ fmtDate(selectedCustomer.birthDate) }}</div>
+          </div>
+          <div>
+            <p class="form-label">Tipo</p>
+            <div class="form-input">
+              {{ selectedCustomer.clientType === 'INDIVIDUAL' ? 'Pessoa Física' : 'Pessoa Jurídica' }}
+            </div>
+          </div>
+          <div>
+            <p class="form-label">CNH</p>
+            <div class="form-input">{{ selectedCustomer.validCnh ? 'Válida' : 'Sem CNH' }}</div>
+          </div>
+        </div>
+      }
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="openEdit(selectedCustomer!); viewModalOpen = false">
+        Editar
+      </button>
+      <button class="btn-brand" (click)="viewModalOpen = false">Fechar</button>
     </ng-container>
   </app-modal>
 </div>

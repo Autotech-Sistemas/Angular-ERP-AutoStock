@@ -1,11 +1,24 @@
 import {
-  Component, inject, signal, computed, OnInit, OnDestroy,
-  HostListener, ChangeDetectorRef, ChangeDetectionStrategy,
-  ViewChild, ElementRef, AfterViewInit,
+  Component,
+  inject,
+  signal,
+  OnInit,
+  OnDestroy,
+  HostListener,
+  ChangeDetectorRef,
+  ChangeDetectionStrategy,
+  ViewChild,
+  ElementRef,
 } from '@angular/core';
 import {
-  RouterOutlet, RouterLink, RouterLinkActive, Router,
-  NavigationStart, NavigationEnd, NavigationCancel, NavigationError,
+  RouterOutlet,
+  RouterLink,
+  RouterLinkActive,
+  Router,
+  NavigationStart,
+  NavigationEnd,
+  NavigationCancel,
+  NavigationError,
 } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,102 +30,135 @@ import Swal from 'sweetalert2';
 import { ThemeToggle } from '../theme-toggle/theme-toggle';
 import { Toast } from '../toast/toast';
 
-export interface NavChild { path: string; label: string; }
-export interface NavItem  { path: string; label: string; icon: string; children?: NavChild[]; }
+export interface NavChild {
+  path: string;
+  label: string;
+}
+export interface NavItem {
+  path: string;
+  label: string;
+  icon: string;
+  children?: NavChild[];
+}
 
-export interface SearchResult { path: string; label: string; section: string; icon: string; }
+export interface SearchResult {
+  path: string;
+  label: string;
+  section: string;
+  icon: string;
+}
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   {
-    path: '/vendas-group', label: 'Vendas', icon: 'sale',
+    path: '/vendas-group',
+    label: 'Vendas',
+    icon: 'sale',
     children: [
-      { path: '/veiculos',  label: 'Veículos' },
-      { path: '/vendas',    label: 'Registrar venda' },
+      { path: '/veiculos', label: 'Ve\u00EDculos' },
+      { path: '/vendas', label: 'Registrar venda' },
       { path: '/contratos', label: 'Contratos' },
     ],
   },
   {
-    path: '/estoque-group', label: 'Estoque', icon: 'box',
-    children: [
-      { path: '/estoque', label: 'Itens em estoque' },
-    ],
+    path: '/estoque-group',
+    label: 'Estoque',
+    icon: 'box',
+    children: [{ path: '/estoque', label: 'Itens em estoque' }],
   },
   {
-    path: '/cadastros-group', label: 'Cadastros', icon: 'customers',
+    path: '/cadastros-group',
+    label: 'Cadastros',
+    icon: 'customers',
     children: [
-      { path: '/clientes',   label: 'Clientes' },
+      { path: '/clientes', label: 'Clientes' },
       { path: '/vendedores', label: 'Vendedores' },
-      { path: '/filiais',    label: 'Filiais' },
+      { path: '/filiais', label: 'Filiais' },
     ],
   },
   {
-    path: '/sistema-group', label: 'Sistema', icon: 'shield',
-    children: [
-      { path: '/agendamentos',    label: 'Agendamentos' },
-      { path: '/administradores', label: 'Administradores' },
-    ],
+    path: '/sistema-group',
+    label: 'Sistema',
+    icon: 'shield',
+    children: [{ path: '/agendamentos', label: 'Agendamentos' }],
   },
 ];
 
-// Flat list for search
-const SEARCH_DATA: SearchResult[] = NAV_ITEMS.flatMap(item =>
+const SEARCH_DATA: SearchResult[] = NAV_ITEMS.flatMap((item) =>
   item.children
-    ? item.children.map(c => ({ path: c.path, label: c.label, section: item.label, icon: item.icon }))
-    : [{ path: item.path, label: item.label, section: item.label, icon: item.icon }]
+    ? item.children.map((c) => ({
+        path: c.path,
+        label: c.label,
+        section: item.label,
+        icon: item.icon,
+      }))
+    : [{ path: item.path, label: item.label, section: item.label, icon: item.icon }],
 );
 
 @Component({
   selector: 'app-sidebar',
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, ThemeToggle, Toast],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    ThemeToggle,
+    Toast,
+  ],
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Sidebar implements OnInit, OnDestroy {
   private sanitizer = inject(DomSanitizer);
-  private http      = inject(HttpClient);
-  auth              = inject(AuthService);
-  private router    = inject(Router);
-  private cdr       = inject(ChangeDetectorRef);
+  private http = inject(HttpClient);
+  auth = inject(AuthService);
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   @ViewChild('searchRef') searchRef?: ElementRef<HTMLInputElement>;
 
-  sidebarOpen     = signal(true);
-  isMobile        = signal(false);
+  sidebarOpen = signal(true);
+  isMobile = signal(false);
   isTransitioning = signal(false);
-  isLeaving       = signal(false);
-  currentLabel    = signal('Dashboard');
-  apiStatus       = signal<'checking' | 'online' | 'offline'>('checking');
-  searchOpen      = signal(false);
-  searchQuery     = '';
-  searchResults   = signal<SearchResult[]>([]);
+  isLeaving = signal(false);
+  currentLabel = signal('Dashboard');
+  apiStatus = signal<'checking' | 'online' | 'offline'>('checking');
+  searchOpen = signal(false);
+  searchQuery = '';
+  searchResults = signal<SearchResult[]>([]);
 
   readonly navItems = NAV_ITEMS;
   private expandedPaths = new Set<string>();
   private pingSub?: Subscription;
 
   readonly todayDate = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
   });
 
   private readonly labelMap: Record<string, string> = {
-    '/dashboard': 'Dashboard', '/veiculos': 'Veículos', '/estoque': 'Estoque',
-    '/vendas': 'Vendas', '/contratos': 'Contratos', '/clientes': 'Clientes',
-    '/vendedores': 'Vendedores', '/filiais': 'Filiais',
-    '/agendamentos': 'Agendamentos', '/administradores': 'Administradores',
+    '/dashboard': 'Dashboard',
+    '/veiculos': 'Ve\u00EDculos',
+    '/estoque': 'Estoque',
+    '/vendas': 'Vendas',
+    '/contratos': 'Contratos',
+    '/clientes': 'Clientes',
+    '/vendedores': 'Vendedores',
+    '/filiais': 'Filiais',
+    '/agendamentos': 'Agendamentos',
   };
 
   ngOnInit(): void {
     this.checkMobile();
     this.startApiPing();
 
-    // Expande todas as abas (grupos) inicialmente no modo desktop
     if (!this.isMobile()) {
       for (const item of NAV_ITEMS) {
-        if (item.children) {
-          this.expandedPaths.add(item.path);
-        }
+        if (item.children) this.expandedPaths.add(item.path);
       }
     }
 
@@ -124,7 +170,11 @@ export class Sidebar implements OnInit, OnDestroy {
         this.isLeaving.set(false);
         this.cdr.markForCheck();
       }
-      if (ev instanceof NavigationEnd || ev instanceof NavigationCancel || ev instanceof NavigationError) {
+      if (
+        ev instanceof NavigationEnd ||
+        ev instanceof NavigationCancel ||
+        ev instanceof NavigationError
+      ) {
         if (ev instanceof NavigationEnd) {
           this.currentLabel.set(this.labelMap[ev.urlAfterRedirects] ?? 'AutoStock');
           this.autoExpandActive();
@@ -142,7 +192,9 @@ export class Sidebar implements OnInit, OnDestroy {
     });
   }
 
-  ngOnDestroy(): void { this.pingSub?.unsubscribe(); }
+  ngOnDestroy(): void {
+    this.pingSub?.unsubscribe();
+  }
 
   @HostListener('window:resize')
   checkMobile(): void {
@@ -158,9 +210,7 @@ export class Sidebar implements OnInit, OnDestroy {
       e.preventDefault();
       this.searchOpen() ? this.closeSearch() : this.openSearch();
     }
-    if (e.key === 'Escape' && this.searchOpen()) {
-      this.closeSearch();
-    }
+    if (e.key === 'Escape' && this.searchOpen()) this.closeSearch();
   }
 
   openSearch(): void {
@@ -178,11 +228,14 @@ export class Sidebar implements OnInit, OnDestroy {
 
   onSearch(): void {
     const q = this.searchQuery.toLowerCase().trim();
-    if (!q) { this.searchResults.set([]); return; }
+    if (!q) {
+      this.searchResults.set([]);
+      return;
+    }
     this.searchResults.set(
-      SEARCH_DATA.filter(r =>
-        r.label.toLowerCase().includes(q) || r.section.toLowerCase().includes(q)
-      )
+      SEARCH_DATA.filter(
+        (r) => r.label.toLowerCase().includes(q) || r.section.toLowerCase().includes(q),
+      ),
     );
     this.cdr.markForCheck();
   }
@@ -192,7 +245,9 @@ export class Sidebar implements OnInit, OnDestroy {
     this.closeSearch();
   }
 
-  toggleSidebar(): void { this.sidebarOpen.update(v => !v); }
+  toggleSidebar(): void {
+    this.sidebarOpen.update((v) => !v);
+  }
 
   toggleExpand(path: string): void {
     if (this.expandedPaths.has(path)) this.expandedPaths.delete(path);
@@ -200,19 +255,19 @@ export class Sidebar implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  isExpanded(path: string): boolean { return this.expandedPaths.has(path); }
+  isExpanded(path: string): boolean {
+    return this.expandedPaths.has(path);
+  }
 
   hasActiveChild(item: NavItem): boolean {
     const url = this.router.url;
-    return !!item.children?.some(c => url.startsWith(c.path));
+    return !!item.children?.some((c) => url.startsWith(c.path));
   }
 
   private autoExpandActive(): void {
     const url = this.router.url;
     for (const item of NAV_ITEMS) {
-      if (item.children?.some(c => url.startsWith(c.path))) {
-        this.expandedPaths.add(item.path);
-      }
+      if (item.children?.some((c) => url.startsWith(c.path))) this.expandedPaths.add(item.path);
     }
     this.cdr.markForCheck();
   }
@@ -222,13 +277,18 @@ export class Sidebar implements OnInit, OnDestroy {
     if (this.isMobile()) this.sidebarOpen.set(false);
   }
 
-  userInitial(): string { return (this.auth.currentUser()?.name ?? 'A')[0].toUpperCase(); }
+  userInitial(): string {
+    return (this.auth.currentUser()?.name ?? 'A')[0].toUpperCase();
+  }
 
   async confirmLogout(): Promise<void> {
     const r = await Swal.fire({
-      title: 'Sair do sistema?', text: 'Você será redirecionado para o login.',
-      icon: 'question', showCancelButton: true,
-      confirmButtonText: 'Sim, sair', cancelButtonText: 'Cancelar',
+      title: 'Sair do sistema?',
+      text: 'Voc\u00EA ser\u00E1 redirecionado para o login.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, sair',
+      cancelButtonText: 'Cancelar',
       confirmButtonColor: '#ea580c',
     });
     if (r.isConfirmed) this.auth.logout();
@@ -236,19 +296,26 @@ export class Sidebar implements OnInit, OnDestroy {
 
   private startApiPing(): void {
     this.pingSub = timer(0, 30000).subscribe(() => {
-      this.http.get('http://localhost:8080/api/actuator/health', { responseType: 'text' })
-        .pipe(map(() => 'online' as const), catchError(() => of('offline' as const)))
-        .subscribe(s => { this.apiStatus.set(s); this.cdr.markForCheck(); });
+      this.http
+        .get('http://localhost:8080/api/actuator/health', { responseType: 'text' })
+        .pipe(
+          map(() => 'online' as const),
+          catchError(() => of('offline' as const)),
+        )
+        .subscribe((s) => {
+          this.apiStatus.set(s);
+          this.cdr.markForCheck();
+        });
     });
   }
 
   getIcon(icon: string): SafeHtml {
     const icons: Record<string, string> = {
       dashboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
-      sale:      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>`,
-      box:       `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`,
+      sale: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>`,
+      box: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`,
       customers: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>`,
-      shield:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+      shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
     };
     return this.sanitizer.bypassSecurityTrustHtml(icons[icon] ?? icons['dashboard']);
   }

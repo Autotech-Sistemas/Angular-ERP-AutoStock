@@ -66,7 +66,10 @@
               <tr>
                 @for (j of [1, 2, 3, 4, 5, 6, 7, 8]; track j) {
                   <td>
-                    <div class="h-4 rounded animate-pulse" style="background: var(--surface-tertiary)"></div>
+                    <div
+                      class="h-4 rounded animate-pulse"
+                      style="background: var(--surface-tertiary)"
+                    ></div>
                   </td>
                 }
               </tr>
@@ -83,14 +86,23 @@
                 <td style="color: var(--text-primary)">{{ s.name }}</td>
                 <td>{{ s.email }}</td>
                 <td>{{ s.phone ?? '—' }}</td>
-                <td>—</td>
-                <td>—</td>
-                <td>—</td>
-                <td><span class="badge badge-green">Ativo</span></td>
+                <td>{{ fmtCurrency(s.salary) }}</td>
+                <td>{{ s.commissionRate != null ? s.commissionRate + '%' : '—' }}</td>
+                <td>{{ fmtDate(s.hireDate) }}</td>
                 <td>
-                  <button class="btn-danger" (click)="delete(s)" [attr.aria-label]="'Excluir ' + s.name">
-                    Excluir
-                  </button>
+                  <span class="badge" [class]="s.enabled === false ? 'badge-red' : 'badge-green'">
+                    {{ s.enabled === false ? 'Inativo' : 'Ativo' }}
+                  </span>
+                </td>
+                <td>
+                  <app-entity-actions
+                    [viewAriaLabel]="'Visualizar vendedor ' + (s.name ?? '')"
+                    [editAriaLabel]="'Editar vendedor ' + (s.name ?? '')"
+                    [deleteAriaLabel]="'Excluir vendedor ' + (s.name ?? '')"
+                    (view)="openView(s)"
+                    (edit)="openEdit(s)"
+                    (delete)="delete(s)"
+                  />
                 </td>
               </tr>
             }
@@ -109,12 +121,21 @@
     </div>
   </div>
 
-  <app-modal title="Novo Vendedor" [open]="modalOpen" (closeModal)="modalOpen = false">
+  <app-modal
+    [title]="editId ? 'Editar Vendedor' : 'Novo Vendedor'"
+    [open]="modalOpen"
+    (closeModal)="modalOpen = false"
+  >
     <ng-container slot="body">
       <form [formGroup]="form" class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
           <label class="form-label" for="sel-name">Nome *</label>
-          <input id="sel-name" class="form-input" formControlName="name" placeholder="NOME DO VENDEDOR" />
+          <input
+            id="sel-name"
+            class="form-input"
+            formControlName="name"
+            placeholder="NOME DO VENDEDOR"
+          />
         </div>
         <div>
           <label class="form-label" for="sel-email">Email *</label>
@@ -126,7 +147,13 @@
         </div>
         <div>
           <label class="form-label" for="sel-phone">Telefone</label>
-          <input id="sel-phone" class="form-input" formControlName="phone" placeholder="(00) 00000-0000" (input)="onPhone($event)" />
+          <input
+            id="sel-phone"
+            class="form-input"
+            formControlName="phone"
+            placeholder="(00) 00000-0000"
+            (input)="onPhone($event)"
+          />
         </div>
         <div>
           <label class="form-label" for="sel-hire">Contratação *</label>
@@ -134,17 +161,96 @@
         </div>
         <div>
           <label class="form-label" for="sel-sal">Salário *</label>
-          <input id="sel-sal" type="number" class="form-input" formControlName="salary" step="0.01" />
+          <input
+            id="sel-sal"
+            type="number"
+            class="form-input"
+            formControlName="salary"
+            step="0.01"
+            min="0"
+          />
         </div>
         <div>
           <label class="form-label" for="sel-comm">Comissão (%) *</label>
-          <input id="sel-comm" type="number" class="form-input" formControlName="commissionRate" step="0.1" placeholder="5.0" />
+          <input
+            id="sel-comm"
+            type="number"
+            class="form-input"
+            formControlName="commissionRate"
+            step="0.1"
+            min="0"
+            placeholder="5.0"
+          />
         </div>
       </form>
     </ng-container>
     <ng-container slot="footer">
       <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
-      <button class="btn-brand" (click)="save()">Salvar</button>
+      <button class="btn-brand" (click)="save()" [disabled]="saving">
+        @if (saving) {
+          <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-dasharray="30 60"
+              stroke-linecap="round"
+            />
+          </svg>
+        }
+        Salvar
+      </button>
+    </ng-container>
+  </app-modal>
+
+  <app-modal
+    title="Detalhes do Vendedor"
+    [open]="viewModalOpen"
+    (closeModal)="viewModalOpen = false"
+  >
+    <ng-container slot="body">
+      @if (selectedSeller) {
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div class="col-span-2">
+            <p class="form-label">Nome</p>
+            <div class="form-input">{{ selectedSeller.name ?? '—' }}</div>
+          </div>
+          <div>
+            <p class="form-label">Email</p>
+            <div class="form-input">{{ selectedSeller.email ?? '—' }}</div>
+          </div>
+          <div>
+            <p class="form-label">Telefone</p>
+            <div class="form-input">{{ selectedSeller.phone ?? '—' }}</div>
+          </div>
+          <div>
+            <p class="form-label">Contratação</p>
+            <div class="form-input">{{ fmtDate(selectedSeller.hireDate) }}</div>
+          </div>
+          <div>
+            <p class="form-label">Salário</p>
+            <div class="form-input">{{ fmtCurrency(selectedSeller.salary) }}</div>
+          </div>
+          <div>
+            <p class="form-label">Comissão</p>
+            <div class="form-input">
+              {{ selectedSeller.commissionRate != null ? selectedSeller.commissionRate + '%' : '—' }}
+            </div>
+          </div>
+          <div>
+            <p class="form-label">Status</p>
+            <div class="form-input">{{ selectedSeller.enabled === false ? 'Inativo' : 'Ativo' }}</div>
+          </div>
+        </div>
+      }
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="openEdit(selectedSeller!); viewModalOpen = false">
+        Editar
+      </button>
+      <button class="btn-brand" (click)="viewModalOpen = false">Fechar</button>
     </ng-container>
   </app-modal>
 </div>

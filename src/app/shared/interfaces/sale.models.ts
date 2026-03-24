@@ -23,6 +23,7 @@ export interface SalePatchRequest {
   netAmount?: number;
   installmentsNumber?: number;
   customerId?: string;
+  invoice?: string;
 }
 
 export interface SaleResponseDTO {

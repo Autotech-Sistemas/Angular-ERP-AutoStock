@@ -6,7 +6,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormsModule, Validators } from '@angular/forms';
 import { InventoryService } from '../../services/inventory.service';
 import { VehicleService } from '../../services/vehicle.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -19,9 +19,9 @@ import { Pagination } from '../../shared/components/pagination/pagination';
 import {
   VehicleResponseDTO,
   InventoryItemResponseDTO,
-  InventoryItem,
   PagedResponse,
   InventoryItemRequest,
+  InventoryItemPatchRequest,
 } from '../../shared/interfaces';
 
 @Component({
@@ -41,11 +41,15 @@ export class Inventory implements OnInit {
 
   loading = false;
   modalOpen = false;
+  editModalOpen = false;
+  viewModalOpen = false;
 
   // 2. Tipando as listas (Substituindo any[])
   items: InventoryItemResponseDTO[] = [];
   filtered: InventoryItemResponseDTO[] = [];
   vehicles: VehicleResponseDTO[] = [];
+
+  selectedItem: InventoryItemResponseDTO | null = null;
 
   page = 0;
   totalElements = 0;
@@ -63,12 +67,22 @@ export class Inventory implements OnInit {
   };
 
   form = this.fb.group({
-    vehicleId: [''],
+    vehicleId: ['', Validators.required],
     licensePlate: [''],
     chassis: [''],
     supplier: [''],
-    acquisitionPrice: [0],
-    profitMargin: [0],
+    acquisitionPrice: [0, [Validators.required, Validators.min(0)]],
+    profitMargin: [0, [Validators.required, Validators.min(0)]],
+    stockEntryDate: [''],
+    stockExitDate: [''],
+  });
+
+  editForm = this.fb.group({
+    licensePlate: [''],
+    chassis: [''],
+    supplier: [''],
+    acquisitionPrice: [0, [Validators.required, Validators.min(0)]],
+    profitMargin: [0, [Validators.required, Validators.min(0)]],
     stockEntryDate: [''],
     stockExitDate: [''],
   });
@@ -157,9 +171,48 @@ export class Inventory implements OnInit {
     this.cdr.markForCheck();
   }
 
+  isInvalidCreate(controlName: keyof typeof this.form.controls): boolean {
+    const control = this.form.controls[controlName];
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  isInvalidEdit(controlName: keyof typeof this.editForm.controls): boolean {
+    const control = this.editForm.controls[controlName];
+    return !!control && control.invalid && (control.dirty || control.touched);
+  }
+
+  openView(i: InventoryItemResponseDTO): void {
+    this.selectedItem = i;
+    this.viewModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  openEdit(i: InventoryItemResponseDTO): void {
+    this.selectedItem = i;
+    this.editForm.reset({
+      licensePlate: i.licensePlate ?? '',
+      chassis: i.chassis ?? '',
+      supplier: i.supplier ?? '',
+      acquisitionPrice: i.acquisitionPrice ?? 0,
+      profitMargin: i.profitMargin ?? 0,
+      stockEntryDate: i.stockEntryDate ? i.stockEntryDate.substring(0, 10) : '',
+      stockExitDate: i.stockExitDate ? i.stockExitDate.substring(0, 10) : '',
+    });
+    this.calcEditPreview();
+    this.editModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
   calcPreview(): void {
     const acq = this.form.value.acquisitionPrice ?? 0;
     const m = this.form.value.profitMargin ?? 0;
+    this.salePreview = m > 0 ? formatCurrency(acq * (1 + m / 100)) : '—';
+    this.cdr.markForCheck();
+  }
+
+  calcEditPreview(): void {
+    const acq = this.editForm.value.acquisitionPrice ?? 0;
+    const m = this.editForm.value.profitMargin ?? 0;
     this.salePreview = m > 0 ? formatCurrency(acq * (1 + m / 100)) : '—';
     this.cdr.markForCheck();
   }
@@ -181,6 +234,13 @@ export class Inventory implements OnInit {
   }
 
   save(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.toast.error('Preencha os campos obrigatorios antes de salvar.');
+      this.cdr.markForCheck();
+      return;
+    }
+
     const v = this.form.value;
 
     // 6. Construindo o DTO de Input e garantindo a compatibilidade de tipos
@@ -192,6 +252,7 @@ export class Inventory implements OnInit {
       acquisitionPrice: v.acquisitionPrice ?? 0,
       profitMargin: v.profitMargin ?? 0,
       stockEntryDate: v.stockEntryDate || undefined,
+      stockExitDate: v.stockExitDate || undefined,
     };
 
     // Removido o (body as any)
@@ -202,10 +263,41 @@ export class Inventory implements OnInit {
         this.invalidateAllPages();
         this.load(this.page, true);
       },
-      error: (e) => {
+      error: (e: { message?: string }) => {
         this.toast.error(e?.message ?? 'Erro');
         this.cdr.markForCheck();
       },
+    });
+  }
+
+  saveEdit(): void {
+    if (!this.selectedItem?.id) return;
+    if (this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      this.toast.error('Revise os campos obrigatorios antes de salvar.');
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const v = this.editForm.value;
+    const body: InventoryItemPatchRequest = {
+      licensePlate: v.licensePlate || undefined,
+      chassis: v.chassis || undefined,
+      supplier: v.supplier || undefined,
+      acquisitionPrice: v.acquisitionPrice ?? 0,
+      profitMargin: v.profitMargin ?? 0,
+      stockEntryDate: v.stockEntryDate || undefined,
+      stockExitDate: v.stockExitDate || undefined,
+    };
+
+    this.svc.update(this.selectedItem.id, body).subscribe({
+      next: () => {
+        this.toast.success('Item atualizado com sucesso!');
+        this.editModalOpen = false;
+        this.invalidateAllPages();
+        this.load(this.page, true);
+      },
+      error: (e: { message?: string }) => this.toast.error(e?.message ?? 'Erro ao atualizar'),
     });
   }
 
@@ -228,7 +320,7 @@ export class Inventory implements OnInit {
         this.invalidateAllPages();
         this.load(this.page, true);
       },
-      error: (e) => this.toast.error(e?.message ?? 'Erro'),
+      error: (e: { message?: string }) => this.toast.error(e?.message ?? 'Erro'),
     });
   }
 

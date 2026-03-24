@@ -34,3 +34,9 @@ export interface NavItem {
   icon: string;
   section: string;
 }
+
+export interface SelectionOption {
+  id: string;
+  label: string;
+  description?: string;
+}

@@ -14,10 +14,18 @@ import { Modal } from '../../shared/components/modal/modal';
 import { Pagination } from '../../shared/components/pagination/pagination';
 import { ContractService } from '../../services/contract.service';
 import { SaleService } from '../../services/sale.service';
+import { EntityActions } from '../../shared/components/entity-actions/entity-actions';
+import {
+  ContractPatchRequest,
+  ContractRequest,
+  ContractResponseDTO,
+  PagedResponse,
+  SaleResponseDTO,
+} from '../../shared/interfaces';
 
 @Component({
   selector: 'app-contracts',
-  imports: [CommonModule, ReactiveFormsModule, Modal, Pagination],
+  imports: [CommonModule, ReactiveFormsModule, Modal, Pagination, EntityActions],
   templateUrl: './contracts.html',
   styleUrl: './contracts.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,10 +40,13 @@ export class Contracts implements OnInit {
 
   loading       = false;
   modalOpen     = false;
-  items:  any[] = [];
-  sales:  any[] = [];
+  viewModalOpen = false;
+  items:  ContractResponseDTO[] = [];
+  sales:  SaleResponseDTO[] = [];
   page          = 0;
   totalElements = 0;
+  editId = '';
+  selectedContract: ContractResponseDTO | null = null;
 
   fmtCurrency = formatCurrency;
   fmtDate     = formatDate;
@@ -68,7 +79,7 @@ export class Contracts implements OnInit {
     const key = this.cacheKey(page);
 
     if (!forceRefresh && this.cache.has(key)) {
-      const cached = this.cache.get<{ items: any[]; total: number }>(key)!;
+      const cached = this.cache.get<{ items: ContractResponseDTO[]; total: number }>(key)!;
       this.items         = cached.items;
       this.totalElements = cached.total;
       this.cdr.markForCheck();
@@ -79,9 +90,9 @@ export class Contracts implements OnInit {
     this.cdr.markForCheck();
 
     this.svc.getAll(page).subscribe({
-      next: (r) => {
-        this.items         = (r as any)?._embedded?.contractResponseDTOList ?? [];
-        this.totalElements = (r as any)?.page?.totalElements ?? 0;
+      next: (r: PagedResponse<ContractResponseDTO>) => {
+        this.items         = r._embedded?.['contractResponseDTOList'] ?? [];
+        this.totalElements = r.page?.totalElements ?? 0;
         this.cache.set(key, { items: this.items, total: this.totalElements });
         this.loading = false;
         this.cdr.markForCheck();
@@ -100,12 +111,14 @@ export class Contracts implements OnInit {
 
   openNew(): void {
     const salesKey = 'sales_all';
+    this.editId = '';
+    this.selectedContract = null;
     if (this.cache.has(salesKey)) {
-      this.sales = this.cache.get<any[]>(salesKey)!;
+      this.sales = this.cache.get<SaleResponseDTO[]>(salesKey)!;
       this.cdr.markForCheck();
     } else {
-      this.saleSvc.getAll(0, 200).subscribe((r) => {
-        this.sales = (r as any)?._embedded?.saleResponseDTOList ?? [];
+      this.saleSvc.getAll(0, 200).subscribe((r: PagedResponse<SaleResponseDTO>) => {
+        this.sales = r._embedded?.['saleResponseDTOList'] ?? [];
         this.cache.set(salesKey, this.sales);
         this.cdr.markForCheck();
       });
@@ -116,24 +129,80 @@ export class Contracts implements OnInit {
     this.cdr.markForCheck();
   }
 
+  openView(c: ContractResponseDTO): void {
+    this.selectedContract = c;
+    this.viewModalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  openEdit(c: ContractResponseDTO): void {
+    this.selectedContract = c;
+    this.editId = c.id ?? '';
+    this.form.reset({
+      contractNumber: c.contractNumber ?? '',
+      contractType: c.contractType ?? '',
+      contractDate: c.contractDate ? c.contractDate.substring(0, 10) : '',
+      deliveryDate: c.deliveryDate ? c.deliveryDate.substring(0, 10) : '',
+      totalAmount: c.totalAmount ?? 0,
+      paymentTerms: c.paymentTerms ?? 'CASH',
+      contractStatus: c.contractStatus ?? 'PENDING',
+      saleId: c.sale?.id ?? '',
+      notes: c.notes ?? '',
+      attachments: c.attachments ?? '',
+    });
+    this.openNewSalesCacheOnly();
+    this.modalOpen = true;
+    this.cdr.markForCheck();
+  }
+
+  private openNewSalesCacheOnly(): void {
+    const salesKey = 'sales_all';
+    if (this.cache.has(salesKey)) {
+      this.sales = this.cache.get<SaleResponseDTO[]>(salesKey)!;
+      return;
+    }
+    this.saleSvc.getAll(0, 200).subscribe((r: PagedResponse<SaleResponseDTO>) => {
+      this.sales = r._embedded?.['saleResponseDTOList'] ?? [];
+      this.cache.set(salesKey, this.sales);
+      this.cdr.markForCheck();
+    });
+  }
+
   save(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.toast.error('Preencha os campos obrigatórios antes de salvar.');
+      this.cdr.markForCheck();
+      return;
+    }
+
     const v    = this.form.value;
-    const body = {
-      contractNumber: v.contractNumber,
-      contractType:   v.contractType,
-      contractDate:   v.contractDate,
-      deliveryDate:   v.deliveryDate,
-      totalAmount:    v.totalAmount,
-      paymentTerms:   v.paymentTerms,
-      contractStatus: v.contractStatus,
-      notes:          v.notes,
-      attachments:    v.attachments,
-      sale:           { id: v.saleId },
+    const body: ContractRequest = {
+      contractNumber: v.contractNumber ?? '',
+      contractType:   v.contractType ?? '',
+      contractDate:   v.contractDate ?? '',
+      deliveryDate:   v.deliveryDate ?? '',
+      totalAmount:    v.totalAmount ?? 0,
+      paymentTerms:   (v.paymentTerms ?? 'CASH') as ContractRequest['paymentTerms'],
+      contractStatus: (v.contractStatus ?? undefined) as ContractRequest['contractStatus'],
+      notes:          v.notes ?? undefined,
+      attachments:    v.attachments ?? undefined,
+      saleId:         v.saleId ?? '',
     };
-    this.svc.create(body as any).subscribe({
+
+    const request = this.editId
+      ? this.svc.update(this.editId, {
+          contractStatus: (v.contractStatus ?? undefined) as ContractPatchRequest['contractStatus'],
+          deliveryDate: v.deliveryDate ?? undefined,
+          notes: v.notes ?? undefined,
+        } as Partial<ContractPatchRequest>)
+      : this.svc.create(body);
+
+    request.subscribe({
       next: () => {
-        this.toast.success('Contrato criado!');
+        this.toast.success(this.editId ? 'Contrato atualizado!' : 'Contrato criado!');
         this.modalOpen = false;
+        this.editId = '';
         this.invalidateAllPages();
         this.load(this.page, true);
       },
@@ -144,14 +213,14 @@ export class Contracts implements OnInit {
     });
   }
 
-  async delete(c: any): Promise<void> {
+  async delete(c: ContractResponseDTO): Promise<void> {
     const r = await Swal.fire({
       title: 'Excluir contrato?', icon: 'warning',
       showCancelButton: true, confirmButtonText: 'Sim',
       cancelButtonText: 'Não', confirmButtonColor: '#dc2626',
     });
     if (!r.isConfirmed) return;
-    this.svc.delete(c.id).subscribe({
+    this.svc.delete(c.id!).subscribe({
       next: () => {
         this.toast.success('Contrato excluído!');
         this.invalidateAllPages();

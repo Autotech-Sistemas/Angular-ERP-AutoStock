@@ -82,25 +82,14 @@
             <div>📞 {{ b.phoneNumber}}</div>
             <div>🕐 {{ b.openingHours}}</div>
           </div>
-          <div class="flex gap-2">
-            <button
-              class="btn-edit flex-1 justify-center"
-              (click)="openEdit(b.id!)"
-              [attr.aria-label]="'Editar filial ' + (b.name)"
-            >
-              Editar
-            </button>
-            <button
-              class="btn-danger"
-              (click)="delete(b)"
-              [attr.aria-label]="'Excluir filial ' + (b.name)"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14H6L5 6" />
-              </svg>
-            </button>
-          </div>
+          <app-entity-actions
+            [viewAriaLabel]="'Visualizar filial ' + b.name"
+            [editAriaLabel]="'Editar filial ' + b.name"
+            [deleteAriaLabel]="'Excluir filial ' + b.name"
+            (view)="openView(b)"
+            (edit)="openEdit(b.id!)"
+            (delete)="delete(b)"
+          />
         </div>
       }
     </div>
@@ -188,6 +177,56 @@
     <ng-container slot="footer">
       <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
       <button class="btn-brand" (click)="save()">Salvar Filial</button>
+    </ng-container>
+  </app-modal>
+
+  <app-modal title="Detalhes da Filial" [open]="viewModalOpen" (closeModal)="viewModalOpen = false">
+    <ng-container slot="body">
+      @if (selectedBranch) {
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div class="col-span-2">
+            <p class="form-label">Nome</p>
+            <div class="form-input">{{ selectedBranch.name }}</div>
+          </div>
+          <div>
+            <p class="form-label">Email</p>
+            <div class="form-input">{{ selectedBranch.email }}</div>
+          </div>
+          <div>
+            <p class="form-label">Telefone</p>
+            <div class="form-input">{{ selectedBranch.phoneNumber ?? '—' }}</div>
+          </div>
+          <div>
+            <p class="form-label">Responsável</p>
+            <div class="form-input">{{ selectedBranch.managerName }}</div>
+          </div>
+          <div>
+            <p class="form-label">Horário</p>
+            <div class="form-input">{{ selectedBranch.openingHours }}</div>
+          </div>
+          <div>
+            <p class="form-label">Tipo</p>
+            <div class="form-input">{{ selectedBranch.branchType }}</div>
+          </div>
+          <div>
+            <p class="form-label">Status</p>
+            <div class="form-input">{{ selectedBranch.status ?? 'Ativo' }}</div>
+          </div>
+          <div class="col-span-2">
+            <p class="form-label">Endereço</p>
+            <div class="form-input">
+              {{ selectedBranch.address?.street ?? '—' }}, {{ selectedBranch.address?.number ?? '—' }}
+              - {{ selectedBranch.address?.district ?? '—' }} - {{ selectedBranch.address?.city ?? '—' }}/{{ selectedBranch.address?.state ?? '—' }}
+            </div>
+          </div>
+        </div>
+      }
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="openEdit(selectedBranch!.id!); viewModalOpen = false">
+        Editar
+      </button>
+      <button class="btn-brand" (click)="viewModalOpen = false">Fechar</button>
     </ng-container>
   </app-modal>
 </div>

@@ -3,6 +3,7 @@ import { VehicleResponseDTO } from './vehicle.models';
 
 export interface InventoryItemRequest {
   stockEntryDate?: string;
+  stockExitDate?: string;
   acquisitionPrice?: number;
   profitMargin?: number;
   supplier?: string;
@@ -12,10 +13,13 @@ export interface InventoryItemRequest {
 }
 
 export interface InventoryItemPatchRequest {
+  stockEntryDate?: string;
+  stockExitDate?: string;
   acquisitionPrice?: number;
   profitMargin?: number;
   supplier?: string;
   licensePlate?: string;
+  chassis?: string;
 }
 
 export interface InventoryItem {

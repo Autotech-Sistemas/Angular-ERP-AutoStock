@@ -5,6 +5,13 @@
       <p class="page-subtitle">Registro e histórico de vendas</p>
     </div>
     <div class="flex items-center gap-2">
+      <input
+        type="text"
+        class="form-input"
+        placeholder="Buscar por cliente, recibo, placa ou NF..."
+        [(ngModel)]="searchQuery"
+        style="max-width: 250px; font-size: 0.875rem"
+      />
       <button
         class="btn-secondary"
         (click)="refresh()"
@@ -76,25 +83,21 @@
                 }
               </tr>
             }
-          } @else if (items.length === 0) {
+          } @else if (filteredItems.length === 0) {
             <tr>
               <td colspan="11" class="text-center py-10 text-sm" style="color: var(--text-muted)">
-                Nenhuma venda registrada
+                Nenhuma venda encontrada
               </td>
             </tr>
           } @else {
-            @for (s of items; track s.id) {
+            @for (s of filteredItems; track s.id) {
               <tr>
                 <td class="font-medium" style="color: var(--text-primary)">
                   {{ fmtDate(s.saleDate) }}
                 </td>
-
-                <!-- Recibo -->
                 <td class="font-mono text-xs" style="color: var(--text-muted)">
                   {{ s.receipt ?? '—' }}
                 </td>
-
-                <!-- Cliente -->
                 <td>
                   <div class="font-medium" style="color: var(--text-primary)">
                     {{ s.customer?.name ?? '—' }}
@@ -103,10 +106,7 @@
                     CPF: {{ s.customer?.cpf ?? '—' }}
                   </div>
                 </td>
-
                 <td>{{ s.seller?.name ?? '—' }}</td>
-
-                <!-- Veículo -->
                 <td>
                   <div class="font-medium" style="color: var(--text-primary)">
                     {{ s.inventoryItem?.vehicle?.brand ?? '—' }}
@@ -116,18 +116,13 @@
                     {{ s.inventoryItem?.licensePlate ?? 'N/A' }}
                   </div>
                 </td>
-
                 <td>{{ fmtCurrency(s.grossAmount) }}</td>
-
                 <td style="color: var(--danger)">
                   {{ s.appliedDiscount ? '- ' + fmtCurrency(s.appliedDiscount) : '—' }}
                 </td>
-
                 <td class="font-bold" style="color: #4ade80">
                   {{ fmtCurrency(s.netAmount ?? s.grossAmount) }}
                 </td>
-
-                <!-- Pagamento -->
                 <td>
                   <span
                     class="inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase tracking-wider"
@@ -137,13 +132,9 @@
                     {{ getPaymentMethodConfig(s.paymentMethod).label }}
                   </span>
                 </td>
-
-                <!-- Parcelas -->
                 <td class="text-xs font-mono" style="color: var(--text-muted)">
                   {{ s.installmentsNumber ? s.installmentsNumber + 'x' : '—' }}
                 </td>
-
-                <!-- Ações -->
                 <td>
                   <div class="flex justify-end gap-1.5">
                     <button class="btn-secondary px-2" (click)="openView(s)" title="Ver detalhes">
@@ -179,9 +170,9 @@
       class="p-4 flex flex-wrap items-center justify-between gap-3"
       style="border-top: 1px solid var(--surface-border)"
     >
-      <span class="text-xs" style="color: var(--text-muted)"
-        >{{ totalElements }} venda(s) registrada(s)</span
-      >
+      <span class="text-xs" style="color: var(--text-muted)">
+        {{ totalElements }} venda(s) registrada(s)
+      </span>
       <app-pagination
         [totalElements]="totalElements"
         [pageSize]="12"
@@ -191,196 +182,228 @@
     </div>
   </div>
 
-  <!-- Modal de Nova Venda -->
   <app-modal title="Registrar Nova Venda" [open]="modalOpen" (closeModal)="modalOpen = false">
     <ng-container slot="body">
-      <form
-        [formGroup]="form"
-        class="grid grid-cols-2 gap-4"
-        style="max-height: 60vh; overflow-y: auto; padding-right: 0.5rem"
-      >
-        <div class="col-span-2">
-          <label class="form-label" for="s-inv">Veículo no Estoque *</label>
-          <select
-            id="s-inv"
-            class="form-input"
-            [class.border-red-500]="isInvalid('inventoryId')"
-            formControlName="inventoryId"
-            (change)="fillPrice()"
-          >
-            <option value="">Selecione um veículo disponível...</option>
-            @for (i of inventory; track i.id) {
-              <option [value]="i.id">
-                {{ i.vehicle?.brand }} {{ i.vehicle?.model }} ({{ i.vehicle?.manufactureYear }}) —
-                Placa: {{ i.licensePlate ?? 'N/A' }}
-              </option>
-            }
-          </select>
-          @if (isInvalid('inventoryId')) {
-            <span class="text-xs text-red-500 mt-1 block">O veículo é obrigatório.</span>
-          }
+      <form [formGroup]="form" class="space-y-5">
+        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider">
+          <span class="badge" [class]="formStep === 1 ? 'badge-orange' : 'badge-blue'">1. Vínculos</span>
+          <span class="badge" [class]="formStep === 2 ? 'badge-orange' : 'badge-blue'">2. Pagamento</span>
+          <span class="badge" [class]="formStep === 3 ? 'badge-orange' : 'badge-blue'">3. Documentos</span>
         </div>
 
-        <div>
-          <label class="form-label" for="s-cust">Cliente Comprador *</label>
-          <select
-            id="s-cust"
-            class="form-input"
-            [class.border-red-500]="isInvalid('customerId')"
-            formControlName="customerId"
-          >
-            <option value="">Selecione o cliente...</option>
-            @for (c of customers; track c.id) {
-              <option [value]="c.id">{{ c.name }} (CPF: {{ c.cpf }})</option>
-            }
-          </select>
-          @if (isInvalid('customerId')) {
-            <span class="text-xs text-red-500 mt-1 block">O cliente é obrigatório.</span>
-          }
-        </div>
+        @if (formStep === 1) {
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="form-label">Veículo no Estoque *</label>
+              <button
+                type="button"
+                class="form-input text-left"
+                [class.border-red-500]="isInvalid('inventoryId')"
+                (click)="inventoryPickerOpen = true"
+              >
+                {{ selectedInventoryLabel(form.value.inventoryId) }}
+              </button>
+            </div>
 
-        <div>
-          <label class="form-label" for="s-seller">Vendedor Responsável *</label>
-          <select
-            id="s-seller"
-            class="form-input"
-            [class.border-red-500]="isInvalid('sellerId')"
-            formControlName="sellerId"
-          >
-            <option value="">Selecione o vendedor...</option>
-            @for (s of sellers; track s.id) {
-              <option [value]="s.id">{{ s.name }}</option>
-            }
-          </select>
-          @if (isInvalid('sellerId')) {
-            <span class="text-xs text-red-500 mt-1 block">O vendedor é obrigatório.</span>
-          }
-        </div>
+            <div>
+              <label class="form-label">Cliente Comprador *</label>
+              <button
+                type="button"
+                class="form-input text-left"
+                [class.border-red-500]="isInvalid('customerId')"
+                (click)="customerPickerOpen = true"
+              >
+                {{ selectedCustomerLabel(form.value.customerId) }}
+              </button>
+            </div>
 
-        <div>
-          <label class="form-label" for="s-date">Data da Venda *</label>
-          <input
-            id="s-date"
-            type="date"
-            class="form-input"
-            [class.border-red-500]="isInvalid('saleDate')"
-            formControlName="saleDate"
-          />
-          @if (isInvalid('saleDate')) {
-            <span class="text-xs text-red-500 mt-1 block">A data é obrigatória.</span>
-          }
-        </div>
+            <div>
+              <label class="form-label">Vendedor Responsável *</label>
+              <button
+                type="button"
+                class="form-input text-left"
+                [class.border-red-500]="isInvalid('sellerId')"
+                (click)="sellerPickerOpen = true"
+              >
+                {{ selectedSellerLabel(form.value.sellerId) }}
+              </button>
+            </div>
 
-        <div>
-          <label class="form-label" for="s-pay">Forma de Pagamento *</label>
-          <select
-            id="s-pay"
-            class="form-input"
-            formControlName="paymentMethod"
-            (change)="toggleInstallments()"
-          >
-            <option value="CASH">À Vista (Dinheiro)</option>
-            <option value="PIX">PIX</option>
-            <option value="BANK_TRANSFER">Transferência Bancária</option>
-            <option value="DEBIT_CARD">Cartão de Débito</option>
-            <option value="CREDIT_CARD">Cartão de Crédito</option>
-            <option value="INSTALLMENTS_WITHOUT_INTEREST">Parcelado (Sem Juros)</option>
-            <option value="INSTALLMENTS_WITH_INTEREST">Parcelado (Com Juros)</option>
-            <option value="FINANCED_BY_BANK">Financiado (Banco)</option>
-            <option value="FINANCED_BY_DEALERSHIP">Financiado (Concessionária)</option>
-            <option value="TRADE_IN">Troca / Permuta</option>
-            <option value="OTHER">Outro</option>
-          </select>
-        </div>
-
-        @if (showInstallments) {
-          <div class="col-span-2">
-            <label class="form-label" for="s-inst">Número de Parcelas</label>
-            <input
-              id="s-inst"
-              type="number"
-              class="form-input"
-              formControlName="installmentsNumber"
-              placeholder="Ex: 12, 24, 48..."
-              min="1"
-            />
+            <div class="col-span-2">
+              <label class="form-label" for="s-date">Data da Venda *</label>
+              <input
+                id="s-date"
+                type="date"
+                class="form-input"
+                [class.border-red-500]="isInvalid('saleDate')"
+                formControlName="saleDate"
+              />
+            </div>
           </div>
         }
 
-        <div>
-          <label class="form-label" for="s-gross">Valor Bruto (R$) *</label>
-          <input
-            id="s-gross"
-            type="number"
-            class="form-input"
-            [class.border-red-500]="isInvalid('grossAmount')"
-            formControlName="grossAmount"
-            step="0.01"
-            (input)="calcNet()"
-          />
-          @if (isInvalid('grossAmount')) {
-            <span class="text-xs text-red-500 mt-1 block">O valor deve ser maior que zero.</span>
-          }
-        </div>
+        @if (formStep === 2) {
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="form-label" for="s-pay">Forma de Pagamento *</label>
+              <select
+                id="s-pay"
+                class="form-input"
+                formControlName="paymentMethod"
+                (change)="toggleInstallments()"
+              >
+                <option value="CASH">À Vista (Dinheiro)</option>
+                <option value="PIX">PIX</option>
+                <option value="BANK_TRANSFER">Transferência Bancária</option>
+                <option value="DEBIT_CARD">Cartão de Débito</option>
+                <option value="CREDIT_CARD">Cartão de Crédito</option>
+                <option value="INSTALLMENTS_WITHOUT_INTEREST">Parcelado (Sem Juros)</option>
+                <option value="INSTALLMENTS_WITH_INTEREST">Parcelado (Com Juros)</option>
+                <option value="FINANCED_BY_BANK">Financiado (Banco)</option>
+                <option value="FINANCED_BY_DEALERSHIP">Financiado (Concessionária)</option>
+                <option value="TRADE_IN">Troca / Permuta</option>
+                <option value="OTHER">Outro</option>
+              </select>
+            </div>
 
-        <div>
-          <label class="form-label" for="s-disc">Desconto Aplicado (R$)</label>
-          <input
-            id="s-disc"
-            type="number"
-            class="form-input"
-            formControlName="appliedDiscount"
-            step="0.01"
-            placeholder="0.00"
-            (input)="calcNet()"
-          />
-        </div>
+            @if (showInstallments) {
+              <div>
+                <label class="form-label" for="s-inst">Número de Parcelas</label>
+                <input
+                  id="s-inst"
+                  type="number"
+                  class="form-input"
+                  [class.border-red-500]="isInvalid('installmentsNumber')"
+                  formControlName="installmentsNumber"
+                  min="1"
+                />
+              </div>
+            }
 
-        <div
-          class="col-span-2 p-4 rounded"
-          style="background: var(--surface-tertiary); border: 1px dashed var(--surface-border)"
-        >
-          <label class="form-label mb-1">Valor Líquido Final</label>
-          <div class="font-heading font-bold text-3xl" style="color: #4ade80">{{ netDisplay }}</div>
-        </div>
+            <div>
+              <label class="form-label" for="s-gross">Valor Bruto (R$) *</label>
+              <input
+                id="s-gross"
+                type="number"
+                class="form-input"
+                [class.border-red-500]="isInvalid('grossAmount')"
+                formControlName="grossAmount"
+                step="0.01"
+                (input)="calcNet()"
+              />
+            </div>
 
-        <div class="col-span-2">
-          <label class="form-label" for="s-rcpt">Número do Recibo / Fatura *</label>
-          <input
-            id="s-rcpt"
-            class="form-input"
-            [class.border-red-500]="isInvalid('receipt')"
-            formControlName="receipt"
-            placeholder="Ex: REC-2026-001"
-          />
-          @if (isInvalid('receipt')) {
-            <span class="text-xs text-red-500 mt-1 block">O recibo é obrigatório.</span>
-          }
-        </div>
+            <div>
+              <label class="form-label" for="s-disc">Desconto Aplicado (R$)</label>
+              <input
+                id="s-disc"
+                type="number"
+                class="form-input"
+                formControlName="appliedDiscount"
+                step="0.01"
+                (input)="calcNet()"
+              />
+            </div>
+
+            <div
+              class="col-span-2 p-4 rounded"
+              style="background: var(--surface-tertiary); border: 1px dashed var(--surface-border)"
+            >
+              <label class="form-label mb-1">Valor Líquido Final</label>
+              <div class="font-heading font-bold text-3xl" style="color: #4ade80">
+                {{ netDisplay }}
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (formStep === 3) {
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="form-label" for="s-rcpt">Número do Recibo / Fatura *</label>
+              <input
+                id="s-rcpt"
+                class="form-input"
+                [class.border-red-500]="isInvalid('receipt')"
+                formControlName="receipt"
+                placeholder="Ex: REC-2026-001"
+              />
+            </div>
+
+            <div class="col-span-2">
+              <label class="form-label" for="s-invc">Nota Fiscal (Opcional)</label>
+              <input
+                id="s-invc"
+                class="form-input"
+                formControlName="invoice"
+                placeholder="Ex: NF-123456"
+              />
+            </div>
+          </div>
+        }
       </form>
     </ng-container>
     <ng-container slot="footer">
       <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
-      <button class="btn-brand" (click)="save()" [disabled]="saving">
-        @if (saving) {
-          <svg class="animate-spin w-4 h-4 mr-2 inline" viewBox="0 0 24 24" fill="none">
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="3"
-              stroke-dasharray="30 60"
-              stroke-linecap="round"
-            />
-          </svg>
-        }
-        Confirmar Venda
-      </button>
+      @if (formStep > 1) {
+        <button class="btn-secondary" (click)="previousStep()">Voltar</button>
+      }
+      @if (formStep < 3) {
+        <button class="btn-brand" (click)="nextStep()">Continuar</button>
+      } @else {
+        <button class="btn-brand" (click)="save()" [disabled]="saving">
+          @if (saving) {
+            <svg class="animate-spin w-4 h-4 mr-2 inline" viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-dasharray="30 60"
+                stroke-linecap="round"
+              />
+            </svg>
+          }
+          Confirmar Venda
+        </button>
+      }
     </ng-container>
   </app-modal>
 
-  <!-- Modal de Edição -->
+  <app-record-picker
+    title="Selecionar Veículo"
+    [open]="inventoryPickerOpen"
+    [options]="inventoryOptions"
+    [selectedId]="form.value.inventoryId ?? ''"
+    searchPlaceholder="Buscar veículo por modelo, placa ou ano..."
+    emptyText="Nenhum veículo disponível encontrado."
+    (close)="inventoryPickerOpen = false"
+    (select)="selectInventory($event)"
+  />
+
+  <app-record-picker
+    title="Selecionar Cliente"
+    [open]="customerPickerOpen"
+    [options]="customerOptions"
+    [selectedId]="form.value.customerId ?? ''"
+    searchPlaceholder="Buscar cliente por nome, CPF ou email..."
+    emptyText="Nenhum cliente encontrado."
+    (close)="customerPickerOpen = false"
+    (select)="selectCustomer($event)"
+  />
+
+  <app-record-picker
+    title="Selecionar Vendedor"
+    [open]="sellerPickerOpen"
+    [options]="sellerOptions"
+    [selectedId]="form.value.sellerId ?? ''"
+    searchPlaceholder="Buscar vendedor por nome ou contato..."
+    emptyText="Nenhum vendedor encontrado."
+    (close)="sellerPickerOpen = false"
+    (select)="selectSeller($event)"
+  />
+
   <app-modal title="Editar Venda" [open]="editModalOpen" (closeModal)="editModalOpen = false">
     <ng-container slot="body">
       @if (selectedSale) {
@@ -422,6 +445,7 @@
               class="form-input"
               [class.border-red-500]="isInvalidEdit('paymentMethod')"
               formControlName="paymentMethod"
+              (change)="toggleEditInstallments()"
             >
               <option value="CASH">À Vista (Dinheiro)</option>
               <option value="PIX">PIX</option>
@@ -437,17 +461,20 @@
             </select>
           </div>
 
-          <div>
-            <label class="form-label" for="e-inst">Número de Parcelas</label>
-            <input
-              id="e-inst"
-              type="number"
-              class="form-input"
-              formControlName="installmentsNumber"
-              placeholder="—"
-              min="1"
-            />
-          </div>
+          @if (editShowInstallments) {
+            <div>
+              <label class="form-label" for="e-inst">Número de Parcelas</label>
+              <input
+                id="e-inst"
+                type="number"
+                class="form-input"
+                [class.border-red-500]="isInvalidEdit('installmentsNumber')"
+                formControlName="installmentsNumber"
+                placeholder="—"
+                min="1"
+              />
+            </div>
+          }
 
           <div>
             <label class="form-label" for="e-disc">Desconto Aplicado (R$)</label>
@@ -469,6 +496,16 @@
               class="form-input"
               formControlName="netAmount"
               step="0.01"
+            />
+          </div>
+
+          <div class="col-span-2">
+            <label class="form-label" for="e-invc">Nota Fiscal</label>
+            <input
+              id="e-invc"
+              class="form-input"
+              formControlName="invoice"
+              placeholder="Ex: NF-123456"
             />
           </div>
         </form>
@@ -495,12 +532,10 @@
     </ng-container>
   </app-modal>
 
-  <!-- Modal de Visualização -->
   <app-modal title="Detalhes da Venda" [open]="viewModalOpen" (closeModal)="viewModalOpen = false">
     <ng-container slot="body">
       @if (selectedSale) {
         <div class="space-y-6" style="max-height: 65vh; overflow-y: auto; padding-right: 0.5rem">
-          <!-- Header com recibo -->
           <div class="flex items-start justify-between">
             <div>
               <h3 class="text-2xl font-bold font-heading" style="color: var(--text-primary)">
@@ -520,7 +555,6 @@
             </div>
           </div>
 
-          <!-- Imagem do veículo -->
           @if (
             selectedSale.inventoryItem?.vehicle?.images &&
             selectedSale.inventoryItem!.vehicle!.images!.length > 0
@@ -541,7 +575,6 @@
             </div>
           }
 
-          <!-- Cards cliente e vendedor -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div
               class="p-4 rounded-xl border"
@@ -588,7 +621,6 @@
             </div>
           </div>
 
-          <!-- Veículo vendido -->
           <div class="p-4 rounded-xl" style="background: var(--surface-tertiary)">
             <p
               class="text-xs uppercase font-bold tracking-wider mb-2"
@@ -599,26 +631,20 @@
             <p class="text-lg font-bold" style="color: var(--text-primary)">
               {{ selectedSale.inventoryItem?.vehicle?.brand }}
               {{ selectedSale.inventoryItem?.vehicle?.model }}
-              ({{
-                selectedSale.inventoryItem?.vehicle?.manufactureYear?.toString()?.substring(0, 4) ??
-                  '—'
-              }})
+              ({{ selectedSale.inventoryItem?.vehicle?.manufactureYear ?? '—' }})
             </p>
             <div class="flex gap-4 mt-2 text-sm">
               <p>
-                <span style="color: var(--text-muted)">Chassi: </span
-                ><span class="font-mono">{{ selectedSale.inventoryItem?.chassis || 'N/A' }}</span>
+                <span style="color: var(--text-muted)">Chassi: </span>
+                <span class="font-mono">{{ selectedSale.inventoryItem?.chassis || 'N/A' }}</span>
               </p>
               <p>
-                <span style="color: var(--text-muted)">Placa: </span
-                ><span class="font-mono">{{
-                  selectedSale.inventoryItem?.licensePlate || 'N/A'
-                }}</span>
+                <span style="color: var(--text-muted)">Placa: </span>
+                <span class="font-mono">{{ selectedSale.inventoryItem?.licensePlate || 'N/A' }}</span>
               </p>
             </div>
           </div>
 
-          <!-- Resumo financeiro -->
           <div>
             <h4
               class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider"
@@ -629,17 +655,15 @@
             <div class="space-y-3 text-sm">
               <div class="flex justify-between items-center">
                 <span style="color: var(--text-muted)">Valor Bruto do Veículo</span>
-                <span class="font-medium" style="color: var(--text-primary)">{{
-                  fmtCurrency(selectedSale.grossAmount)
-                }}</span>
+                <span class="font-medium" style="color: var(--text-primary)">
+                  {{ fmtCurrency(selectedSale.grossAmount) }}
+                </span>
               </div>
               <div class="flex justify-between items-center">
                 <span style="color: var(--text-muted)">Desconto Concedido</span>
-                <span class="font-medium" style="color: var(--danger)">{{
-                  selectedSale.appliedDiscount
-                    ? '- ' + fmtCurrency(selectedSale.appliedDiscount)
-                    : 'R$ 0,00'
-                }}</span>
+                <span class="font-medium" style="color: var(--danger)">
+                  {{ selectedSale.appliedDiscount ? '- ' + fmtCurrency(selectedSale.appliedDiscount) : 'R$ 0,00' }}
+                </span>
               </div>
               <div
                 class="flex justify-between items-center pt-3 border-t border-dashed"
@@ -648,50 +672,22 @@
                 <span
                   class="font-bold uppercase tracking-wider text-xs"
                   style="color: var(--text-primary)"
-                  >Valor Líquido Recebido</span
                 >
-                <span class="font-bold text-lg" style="color: #4ade80">{{
-                  fmtCurrency(selectedSale.netAmount ?? selectedSale.grossAmount)
-                }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Condições de pagamento -->
-          <div>
-            <h4
-              class="font-bold border-b pb-2 mb-3 text-sm uppercase tracking-wider"
-              style="color: var(--brand); border-color: var(--surface-border)"
-            >
-              Condições de Pagamento
-            </h4>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span class="block text-xs mb-1" style="color: var(--text-muted)">Método</span>
-                <span
-                  class="inline-flex items-center px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wider"
-                  [style.backgroundColor]="getPaymentMethodConfig(selectedSale.paymentMethod).bg"
-                  [style.color]="getPaymentMethodConfig(selectedSale.paymentMethod).text"
-                >
-                  {{ getPaymentMethodConfig(selectedSale.paymentMethod).label }}
+                  Valor Líquido Recebido
+                </span>
+                <span class="font-bold text-lg" style="color: #4ade80">
+                  {{ fmtCurrency(selectedSale.netAmount ?? selectedSale.grossAmount) }}
                 </span>
               </div>
-              @if (selectedSale.installmentsNumber) {
-                <div>
-                  <span class="block text-xs mb-1" style="color: var(--text-muted)"
-                    >Parcelamento</span
-                  >
-                  <span class="font-medium" style="color: var(--text-primary)"
-                    >Em {{ selectedSale.installmentsNumber }}x vezes</span
-                  >
-                </div>
-              }
             </div>
           </div>
         </div>
       }
     </ng-container>
     <ng-container slot="footer">
+      <button class="btn-secondary" (click)="printReceipt()" title="Imprimir">
+        Imprimir
+      </button>
       <button class="btn-secondary" (click)="openEdit(selectedSale!); viewModalOpen = false">
         Editar Venda
       </button>

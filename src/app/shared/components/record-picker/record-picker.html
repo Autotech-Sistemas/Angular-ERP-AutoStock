@@ -1,0 +1,35 @@
+<app-modal [title]="title" [open]="open" (closeModal)="onClose()">
+  <ng-container slot="body">
+    <div class="record-picker">
+      <input
+        type="search"
+        class="form-input"
+        [(ngModel)]="searchQuery"
+        [placeholder]="searchPlaceholder"
+      />
+
+      <div class="record-picker-list">
+        @if (filteredOptions.length === 0) {
+          <div class="record-picker-empty">{{ emptyText }}</div>
+        } @else {
+          @for (option of filteredOptions; track option.id) {
+            <button
+              type="button"
+              class="record-picker-option"
+              [class.selected]="option.id === selectedId"
+              (click)="pick(option.id)"
+            >
+              <span class="record-picker-label">{{ option.label }}</span>
+              @if (option.description) {
+                <span class="record-picker-description">{{ option.description }}</span>
+              }
+            </button>
+          }
+        }
+      </div>
+    </div>
+  </ng-container>
+  <ng-container slot="footer">
+    <button class="btn-secondary" type="button" (click)="onClose()">Fechar</button>
+  </ng-container>
+</app-modal>

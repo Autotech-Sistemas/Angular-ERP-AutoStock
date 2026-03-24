@@ -58,50 +58,116 @@
   } @else {
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" role="list">
       @for (c of items; track c.id) {
-        <div class="branch-card" role="listitem">
+        <div class="branch-card flex flex-col h-full" role="listitem">
           <div class="flex items-start justify-between mb-3">
-            <div>
-              <div class="font-heading font-bold text-sm" style="color: var(--text-primary)">
+            <div class="min-w-0 pr-3">
+              <div
+                class="font-heading font-bold text-sm truncate"
+                style="color: var(--text-primary)"
+                [title]="c.contractNumber ?? '—'"
+              >
                 {{ c.contractNumber ?? '—' }}
               </div>
-              <div class="text-xs mt-0.5" style="color: var(--text-muted)">
+              <div class="text-xs mt-0.5 truncate" style="color: var(--text-muted)">
                 {{ c.contractType ?? '—' }}
               </div>
             </div>
-            <span class="badge" [class]="statusClass(c.contractStatus)">{{
+            <span class="badge whitespace-nowrap" [class]="statusClass(c.contractStatus)">{{
               statusLabel(c.contractStatus)
             }}</span>
           </div>
-          <div class="space-y-1 text-xs mb-4" style="color: var(--text-muted)">
-            <div>
-              Cliente:
-              <span style="color: var(--text-primary)">{{ c.sale?.customer?.name ?? '—' }}</span>
+
+          <div class="flex-1 space-y-4 mb-4">
+            <div class="space-y-2">
+              <div class="flex items-center gap-2 text-sm">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  style="color: var(--text-muted)"
+                  aria-hidden="true"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span
+                  class="truncate"
+                  style="color: var(--text-primary)"
+                  [title]="c.sale?.customer?.name ?? '—'"
+                >
+                  {{ c.sale?.customer?.name ?? '—' }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2 text-sm">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  style="color: var(--text-muted)"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"
+                  />
+                  <circle cx="7" cy="17" r="2" />
+                  <path d="M9 17h6" />
+                  <circle cx="17" cy="17" r="2" />
+                </svg>
+                <span
+                  class="truncate"
+                  style="color: var(--text-primary)"
+                  [title]="
+                    (c.sale?.inventoryItem?.vehicle?.brand ?? '') +
+                    ' ' +
+                    (c.sale?.inventoryItem?.vehicle?.model ?? '')
+                  "
+                >
+                  {{ c.sale?.inventoryItem?.vehicle?.brand ?? '—' }}
+                  {{ c.sale?.inventoryItem?.vehicle?.model ?? '' }}
+                </span>
+              </div>
             </div>
-            <div>
-              Veículo:
-              <span style="color: var(--text-primary)">
-                {{ c.sale?.inventoryItem?.vehicle?.brand ?? '—' }}
-                {{ c.sale?.inventoryItem?.vehicle?.model ?? '' }}
-              </span>
-            </div>
-            <div>
-              Data: <span style="color: var(--text-primary)">{{ fmtDate(c.contractDate) }}</span>
-            </div>
-            <div>
-              Entrega: <span style="color: var(--text-primary)">{{ fmtDate(c.deliveryDate) }}</span>
+
+            <div
+              class="grid grid-cols-2 gap-3 text-xs p-3 rounded-lg"
+              style="background: var(--surface-tertiary)"
+            >
+              <div>
+                <div style="color: var(--text-muted)">Data do Contrato</div>
+                <div class="font-medium mt-0.5" style="color: var(--text-primary)">
+                  {{ fmtDate(c.contractDate) }}
+                </div>
+              </div>
+              <div>
+                <div style="color: var(--text-muted)">Entrega</div>
+                <div class="font-medium mt-0.5" style="color: var(--text-primary)">
+                  {{ fmtDate(c.deliveryDate) }}
+                </div>
+              </div>
             </div>
           </div>
-          <div class="flex items-center justify-between">
-            <div class="font-heading font-bold" style="color: #4ade80">
+
+          <div
+            class="mt-auto pt-4 flex items-center justify-between gap-3 border-t"
+            style="border-color: var(--surface-border)"
+          >
+            <div class="font-heading font-bold text-base" style="color: #10b981">
               {{ fmtCurrency(c.totalAmount) }}
             </div>
-            <button
-              class="btn-danger"
-              (click)="delete(c)"
-              [attr.aria-label]="'Excluir contrato ' + c.contractNumber"
-            >
-              Excluir
-            </button>
+            <app-entity-actions
+              [viewAriaLabel]="'Visualizar contrato ' + (c.contractNumber ?? '')"
+              [editAriaLabel]="'Editar contrato ' + (c.contractNumber ?? '')"
+              [deleteAriaLabel]="'Excluir contrato ' + (c.contractNumber ?? '')"
+              (view)="openView(c)"
+              (edit)="openEdit(c)"
+              (delete)="delete(c)"
+            />
           </div>
         </div>
       }
@@ -116,16 +182,30 @@
     </div>
   }
 
-  <app-modal title="Novo Contrato" [open]="modalOpen" (closeModal)="modalOpen = false">
+  <app-modal
+    [title]="editId ? 'Editar Contrato' : 'Novo Contrato'"
+    [open]="modalOpen"
+    (closeModal)="modalOpen = false"
+  >
     <ng-container slot="body">
       <form [formGroup]="form" class="grid grid-cols-2 gap-4">
         <div>
           <label class="form-label" for="ct-num">Nº Contrato *</label>
-          <input id="ct-num" class="form-input" formControlName="contractNumber" placeholder="CONT-001" />
+          <input
+            id="ct-num"
+            class="form-input"
+            formControlName="contractNumber"
+            placeholder="CONT-001"
+          />
         </div>
         <div>
           <label class="form-label" for="ct-type">Tipo *</label>
-          <input id="ct-type" class="form-input" formControlName="contractType" placeholder="Compra e Venda" />
+          <input
+            id="ct-type"
+            class="form-input"
+            formControlName="contractType"
+            placeholder="Compra e Venda"
+          />
         </div>
         <div>
           <label class="form-label" for="ct-date">Data Contrato *</label>
@@ -137,7 +217,13 @@
         </div>
         <div>
           <label class="form-label" for="ct-amt">Valor Total *</label>
-          <input id="ct-amt" type="number" class="form-input" formControlName="totalAmount" step="0.01" />
+          <input
+            id="ct-amt"
+            type="number"
+            class="form-input"
+            formControlName="totalAmount"
+            step="0.01"
+          />
         </div>
         <div>
           <label class="form-label" for="ct-pay">Pagamento *</label>
@@ -162,7 +248,8 @@
           <select id="ct-sale" class="form-input" formControlName="saleId">
             @for (s of sales; track s.id) {
               <option [value]="s.id">
-                {{ fmtDate(s.saleDate) }} — {{ s.customer?.name }} — {{ fmtCurrency(s.grossAmount) }}
+                {{ fmtDate(s.saleDate) }} — {{ s.customer?.name }} —
+                {{ fmtCurrency(s.grossAmount) }}
               </option>
             }
           </select>
@@ -173,13 +260,76 @@
         </div>
         <div class="col-span-2">
           <label class="form-label" for="ct-att">Anexos</label>
-          <input id="ct-att" class="form-input" formControlName="attachments" placeholder="URL ou nome do arquivo" />
+          <input
+            id="ct-att"
+            class="form-input"
+            formControlName="attachments"
+            placeholder="URL ou nome do arquivo"
+          />
         </div>
       </form>
     </ng-container>
     <ng-container slot="footer">
       <button class="btn-secondary" (click)="modalOpen = false">Cancelar</button>
       <button class="btn-brand" (click)="save()">Salvar Contrato</button>
+    </ng-container>
+  </app-modal>
+
+  <app-modal
+    title="Detalhes do Contrato"
+    [open]="viewModalOpen"
+    (closeModal)="viewModalOpen = false"
+  >
+    <ng-container slot="body">
+      @if (selectedContract) {
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="form-label">Contrato</p>
+            <div class="form-input">{{ selectedContract.contractNumber ?? '—' }}</div>
+          </div>
+          <div>
+            <p class="form-label">Tipo</p>
+            <div class="form-input">{{ selectedContract.contractType ?? '—' }}</div>
+          </div>
+          <div>
+            <p class="form-label">Data do Contrato</p>
+            <div class="form-input">{{ fmtDate(selectedContract.contractDate) }}</div>
+          </div>
+          <div>
+            <p class="form-label">Entrega</p>
+            <div class="form-input">{{ fmtDate(selectedContract.deliveryDate) }}</div>
+          </div>
+          <div>
+            <p class="form-label">Valor</p>
+            <div class="form-input">{{ fmtCurrency(selectedContract.totalAmount) }}</div>
+          </div>
+          <div>
+            <p class="form-label">Status</p>
+            <div class="form-input">{{ statusLabel(selectedContract.contractStatus) }}</div>
+          </div>
+          <div class="col-span-2">
+            <p class="form-label">Cliente</p>
+            <div class="form-input">{{ selectedContract.sale?.customer?.name ?? '—' }}</div>
+          </div>
+          <div class="col-span-2">
+            <p class="form-label">Veículo</p>
+            <div class="form-input">
+              {{ selectedContract.sale?.inventoryItem?.vehicle?.brand ?? '—' }}
+              {{ selectedContract.sale?.inventoryItem?.vehicle?.model ?? '' }}
+            </div>
+          </div>
+          <div class="col-span-2">
+            <p class="form-label">Observações</p>
+            <div class="form-input">{{ selectedContract.notes ?? '—' }}</div>
+          </div>
+        </div>
+      }
+    </ng-container>
+    <ng-container slot="footer">
+      <button class="btn-secondary" (click)="openEdit(selectedContract!); viewModalOpen = false">
+        Editar
+      </button>
+      <button class="btn-brand" (click)="viewModalOpen = false">Fechar</button>
     </ng-container>
   </app-modal>
 </div>
