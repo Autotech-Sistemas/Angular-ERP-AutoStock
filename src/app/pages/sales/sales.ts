@@ -442,7 +442,7 @@ export class Sales implements OnInit {
         ) {
           this.toast.error('Este ve\u00EDculo j\u00E1 foi vendido! O estoque est\u00E1 desatualizado.');
         } else {
-          this.toast.error(errorMsg || 'Erro ao registrar venda');
+          this.toast.error(e?.error?.message || 'Não foi possível registrar a venda. Verifique os dados e tente novamente.');
         }
         this.saving = false;
         this.cdr.markForCheck();
@@ -481,7 +481,8 @@ export class Sales implements OnInit {
         this.load(this.page, true);
       },
       error: (e: any) => {
-        this.toast.error(e?.error?.message || e?.message || 'Erro ao atualizar venda');
+        const msg = e?.error?.message || 'Não foi possível atualizar a venda. Tente novamente mais tarde.';
+        this.toast.error(msg);
         this.saving = false;
         this.cdr.markForCheck();
       },
@@ -510,7 +511,8 @@ export class Sales implements OnInit {
             this.load(0, true);
           },
           error: (e: any) => {
-            this.toast.error(e?.error?.message || e?.message || 'Erro ao cancelar venda');
+            const msg = e?.error?.message || 'Não foi possível cancelar a venda. Ela pode ter dependências ativas no sistema.';
+            this.toast.error(msg);
             this.loading = false;
             this.cdr.markForCheck();
           },

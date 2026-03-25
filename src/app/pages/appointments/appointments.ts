@@ -202,7 +202,8 @@ export class Appointments implements OnInit {
         this.toast.info('Status atualizado!');
       },
       error: (e) => {
-        this.toast.error(e?.error?.message || e?.message || 'Acesso negado ou erro ao atualizar.');
+        const msg = e?.error?.message || 'Não foi possível atualizar o status. Tente novamente mais tarde.';
+        this.toast.error(msg);
         this.load(this.page, true); // Recarrega a tabela para reverter o select visualmente
       },
     });
@@ -235,7 +236,8 @@ export class Appointments implements OnInit {
         this.load(this.page, true);
       },
       error: (e) => {
-        this.toast.error(e?.message ?? 'Erro');
+        const msg = e?.error?.message || 'Não foi possível salvar o agendamento. Verifique os dados e tente novamente.';
+        this.toast.error(msg);
         this.cdr.markForCheck();
       },
     });
@@ -258,7 +260,10 @@ export class Appointments implements OnInit {
         this.invalidateAllPages();
         this.load(this.page, true);
       },
-      error: (e) => this.toast.error(e?.message ?? 'Erro'),
+      error: (e) => {
+        const msg = e?.error?.message || 'Não foi possível excluir este agendamento. Ele pode estar vinculado a outros registros.';
+        this.toast.error(msg);
+      },
     });
   }
 

@@ -26,7 +26,7 @@
                 <img
                   [src]="getImageUrl(vehicle.images[0])"
                   [alt]="vehicle.brand + ' ' + vehicle.model"
-                  style="width: 100%; height: 100%; object-fit: cover;"
+                  style="width: 100%; height: 100%; object-fit: contain;"
                 />
               </div>
             } @else {
@@ -36,7 +36,7 @@
                   <img
                     [src]="getImageUrl(vehicle.images[0])"
                     [alt]="vehicle.brand + ' ' + vehicle.model"
-                    style="width: 100%; height: 100%; object-fit: cover;"
+                    style="width: 100%; height: 100%; object-fit: contain;"
                   />
                 </div>
                 <!-- Miniaturas -->
