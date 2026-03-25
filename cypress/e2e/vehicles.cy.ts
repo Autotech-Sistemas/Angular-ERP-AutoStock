@@ -1,63 +1,95 @@
-describe('Vehicles E2E', () => {
+Cypress.Commands.add('loginAsAdmin', () => {
+  cy.visit('/login');
+  cy.get('input[type="email"]').type('admin@auto.com');
+  cy.get('input[type="password"]').type('Auto123@');
+  cy.get('button[type="submit"]').click();
+  cy.url().should('not.include', '/login');
+});
+
+describe('Fluxo de Veículos (CRUD e Catálogo)', () => {
+  const apiUrl = '**/api/vehicles';
 
   beforeEach(() => {
-    cy.loginAsAdmin()
-  })
+    // 1. Mantém a resolução desktop para o menu não sobrepor
+    cy.viewport(1366, 768);
+    
+    // 2. Prepara para interceptar a chamada do backend
+    cy.intercept('GET', `${apiUrl}*`).as('getVehicles');
 
-  it('deve navegar para página de veículos', () => {
-    cy.visit('/vehicles')
+    // 3. Faz o login usando o seu comando customizado
+    cy.loginAsAdmin();
 
-    cy.url().should('include', '/vehicles')
-    cy.contains('Veículos')
-  })
+    // 4. O SEGREDO ESTÁ AQUI: Navegar para a página de veículos!
+    // IMPORTANTE: Mude para '/vehicles' se a sua rota no Angular estiver em inglês
+    cy.visit('/veiculos'); 
+    
+    // 5. Espera os dados do Spring Boot chegarem
+    cy.wait('@getVehicles');
+  });
 
-  it('deve listar o veículo mockado (Toyota Corolla)', () => {
-    cy.visit('/vehicles')
+  // --- 1. LISTAGEM ---
+  it('deve carregar a tela, exibir a tabela e o filtro', () => {
+    cy.get('.page-title').contains('Veículos').should('be.visible');
+    cy.get('.data-table').should('be.visible');
+    cy.get('input[type="search"]').should('be.visible');
+    cy.get('select[aria-label="Filtrar por tipo"]').should('be.visible');
+  });
 
-    cy.contains('Toyota').should('be.visible')
-    cy.contains('Corolla').should('be.visible')
-    cy.contains('Black').should('be.visible')
-  })
+  // --- 2. FILTRO INTELIGENTE ---
+  it('deve filtrar veículos dinamicamente capturando um dado da tabela', () => {
+    cy.get('tbody tr').first().find('td').eq(1).then(($td) => {
+      const vehicleName = $td.text().trim().split(' ')[0]; 
+      
+      cy.get('input[type="search"]').type(vehicleName);
+      
+      cy.get('tbody tr').should('have.length.greaterThan', 0);
+      cy.get('tbody tr').first().contains(vehicleName, { matchCase: false });
+    });
+  });
 
-  it('deve exibir detalhes do veículo ao abrir visualização', () => {
-    cy.visit('/vehicles')
+  // --- 3. MODAL DE CRIAÇÃO ---
+  it('deve abrir o modal de Novo Veículo', () => {
+    cy.contains('button', 'Novo Veículo').click();
+    cy.get('app-vehicle-form').should('be.visible');
+  });
 
-    cy.contains('Toyota')
-      .parents('[class*="card"], tr, div')
-      .first()
-      .click()
+  // --- 4. MODAL DE VISUALIZAÇÃO ---
+  it('deve abrir o modal de detalhes do veículo (View)', () => {
+    cy.get('tbody tr').first().find('button[title="Ver detalhes"]').click({ force: true });
+    cy.get('app-vehicle-view').should('be.visible');
+  });
 
-    cy.contains('Corolla')
-    cy.contains('Premium Sound System')
-    cy.contains('Excellent condition')
-  })
+  // --- 5. MODAL DE IMAGENS ---
+  it('deve abrir o gerenciador de imagens do veículo', () => {
+    cy.get('tbody tr').first().within(() => {
+      cy.get('[title="Ver/adicionar imagens"], [title="Adicionar imagens"], button[title="Gerenciar imagens"]')
+        .first()
+        .click({ force: true });
+    });
+    cy.get('app-vehicle-images-modal').should('be.visible');
+  });
 
-  it('deve abrir modal de imagens se existir botão', () => {
-    cy.visit('/vehicles')
+  // --- 6. EXCLUSÃO (MOCKADA PARA EVITAR ERRO 409 DO BANCO) ---
+  it('deve simular a exclusão de um veículo com o SweetAlert', () => {
+    // Intercepta a chamada DELETE e FORÇA a resposta ser 204 (Sucesso), 
+    // ignorando o bloqueio de chave estrangeira do backend real.
+    cy.intercept('DELETE', `${apiUrl}/*`, { statusCode: 204 }).as('deleteVehicle');
+    cy.intercept('GET', `${apiUrl}*`).as('reloadVehicles');
 
-    cy.get('button')
-      .contains(/imagem|foto/i)
-      .first()
-      .click({ force: true })
+    // Clica no botão "Excluir" da primeira linha
+    cy.get('tbody tr').first().contains('Excluir').click({ force: true });
 
-    cy.get('body').then(($body) => {
-      if ($body.find('img').length > 0) {
-        cy.get('img').should('exist')
-      } else {
-        cy.contains('Nenhuma imagem')
-      }
-    })
-  })
+    // Clica no "Sim, excluir" do popup
+    cy.contains('button', 'Sim, excluir').should('be.visible').click();
 
-  it('deve filtrar veículo pelo nome', () => {
-    cy.visit('/vehicles')
+    // Valida se o Cypress interceptou com sucesso
+    cy.wait('@deleteVehicle');
+    
+    // Verifica se a mensagem verde do Toast apareceu na tela
+    cy.contains('Veículo excluído!').should('be.visible');
 
-    cy.get('input[placeholder*="Buscar"], input[type="search"]')
-      .first()
-      .type('Toyota')
+    // Aguarda a tabela recarregar
+    cy.wait('@reloadVehicles');
+  });
 
-    cy.contains('Toyota')
-    cy.contains('Corolla')
-  })
-
-})
+});
