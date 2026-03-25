@@ -6,7 +6,8 @@ import { PagedResponse } from '../shared/interfaces';
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
-  private readonly BASE = 'http://localhost:8080/api';
+
+  private readonly BASE = '/api';
 
   get<T>(path: string): Observable<T> {
     return this.http.get<T>(`${this.BASE}${path}`);
@@ -44,7 +45,7 @@ export class ApiService {
     return this.http.delete<void>(`${this.BASE}${path}/${id}`);
   }
 
-  // ─── GESTÃO DE FICHEIROS (FILES) ──────────────────────────────────────────────
+  // FILES
 
   uploadVehicleImage(vehicleId: string, file: File): Observable<unknown> {
     const fd = new FormData();

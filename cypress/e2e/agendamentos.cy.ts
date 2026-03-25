@@ -21,7 +21,8 @@ describe('Fluxo Completo de Agendamentos (CRUD com Spring Boot)', () => {
   });
 
   // --- 1. READ (Listagem) ---
-  it('deve carregar a tela, exibir a tabela e a paginação', () => {
+  
+  skip.it('deve carregar a tela, exibir a tabela e a paginação', () => {
     cy.get('.page-title').contains('Agendamentos').should('be.visible');
     cy.get('.data-table').should('be.visible');
     

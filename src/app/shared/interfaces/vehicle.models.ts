@@ -10,12 +10,13 @@ export type VehicleAvailability = 'AVAILABLE' | 'SOLD' | 'PENDING' | 'RESERVED' 
 
 export interface VehicleImageFile {
   id?: string;
-  name?: string;
-  downloadUri?: string;       // campo retornado pelo GET /vehicles
-  fileDownloadUri?: string;   // campo retornado pelo POST /file/upload-vehicle-image
+  fileName?: string;       
+  name?: string;           
+  fileDownloadUri?: string; 
+  downloadUri?: string;
+  fileType?: string;       
   type?: string;
-  fileType?: string;
-  size?: number;
+  size?: number;           
 }
 
 export interface UploadFileResponseDTO {
