@@ -12,6 +12,16 @@ jobs:
     permissions:
       write-all
     runs-on: ubuntu-latest
+    services:
+      backend:
+        image: raphaelmuniz/dealership-backend:latest
+        ports:
+          - 8080:8080
+        options: >-
+          --health-cmd="curl -f http://localhost:8080/actuator/health || exit 1"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=5
 
     steps:
       - name: Checkout repository
