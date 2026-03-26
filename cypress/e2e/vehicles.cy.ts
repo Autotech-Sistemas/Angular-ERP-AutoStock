@@ -12,7 +12,7 @@ describe('Fluxo de Veículos (CRUD e Catálogo)', () => {
   beforeEach(() => {
     // 1. Mantém a resolução desktop para o menu não sobrepor
     cy.viewport(1366, 768);
-    
+
     // 2. Prepara para interceptar a chamada do backend
     cy.intercept('GET', `${apiUrl}*`).as('getVehicles');
 
@@ -21,8 +21,8 @@ describe('Fluxo de Veículos (CRUD e Catálogo)', () => {
 
     // 4. O SEGREDO ESTÁ AQUI: Navegar para a página de veículos!
     // IMPORTANTE: Mude para '/vehicles' se a sua rota no Angular estiver em inglês
-    cy.visit('/veiculos'); 
-    
+    cy.visit('/veiculos');
+
     // 5. Espera os dados do Spring Boot chegarem
     cy.wait('@getVehicles');
   });
@@ -37,14 +37,15 @@ describe('Fluxo de Veículos (CRUD e Catálogo)', () => {
 
   // --- 2. FILTRO INTELIGENTE ---
   it('deve filtrar veículos dinamicamente capturando um dado da tabela', () => {
-    cy.get('tbody tr').first().find('td').eq(1).then(($td) => {
-      const vehicleName = $td.text().trim().split(' ')[0]; 
-      
-      cy.get('input[type="search"]').type(vehicleName);
-      
-      cy.get('tbody tr').should('have.length.greaterThan', 0);
-      cy.get('tbody tr').first().contains(vehicleName, { matchCase: false });
-    });
+    cy.get('tbody tr')
+      .first()
+      .find('td')
+      .eq(1)
+      .then(($td) => {
+        const vehicleName = $td.find('.font-medium').text().trim(); // só pega marca + modelo
+        cy.get('input[type="search"]').clear().type(vehicleName);
+        cy.get('tbody tr').first().find('td').eq(1).should('contain.text', vehicleName);
+      });
   });
 
   // --- 3. MODAL DE CRIAÇÃO ---
@@ -61,17 +62,21 @@ describe('Fluxo de Veículos (CRUD e Catálogo)', () => {
 
   // --- 5. MODAL DE IMAGENS ---
   it('deve abrir o gerenciador de imagens do veículo', () => {
-    cy.get('tbody tr').first().within(() => {
-      cy.get('[title="Ver/adicionar imagens"], [title="Adicionar imagens"], button[title="Gerenciar imagens"]')
-        .first()
-        .click({ force: true });
-    });
+    cy.get('tbody tr')
+      .first()
+      .within(() => {
+        cy.get(
+          '[title="Ver/adicionar imagens"], [title="Adicionar imagens"], button[title="Gerenciar imagens"]',
+        )
+          .first()
+          .click({ force: true });
+      });
     cy.get('app-vehicle-images-modal').should('be.visible');
   });
 
   // --- 6. EXCLUSÃO (MOCKADA PARA EVITAR ERRO 409 DO BANCO) ---
   it('deve simular a exclusão de um veículo com o SweetAlert', () => {
-    // Intercepta a chamada DELETE e FORÇA a resposta ser 204 (Sucesso), 
+    // Intercepta a chamada DELETE e FORÇA a resposta ser 204 (Sucesso),
     // ignorando o bloqueio de chave estrangeira do backend real.
     cy.intercept('DELETE', `${apiUrl}/*`, { statusCode: 204 }).as('deleteVehicle');
     cy.intercept('GET', `${apiUrl}*`).as('reloadVehicles');
@@ -84,14 +89,14 @@ describe('Fluxo de Veículos (CRUD e Catálogo)', () => {
 
     // Valida se o Cypress interceptou com sucesso
     cy.wait('@deleteVehicle');
-    
+
     // Verifica se a mensagem verde do Toast apareceu na tela
     cy.contains('Veículo excluído!').should('be.visible');
 
     // Aguarda a tabela recarregar
     cy.wait('@reloadVehicles');
   });
-  
+
   // --- 7. EDIÇÃO ---
   it('deve abrir o modal de edição e salvar as alterações', () => {
     // Intercepta apenas o PATCH, que é o método real que sua API usa
@@ -105,16 +110,17 @@ describe('Fluxo de Veículos (CRUD e Catálogo)', () => {
     cy.get('app-vehicle-form').should('be.visible');
 
     // Clica em Salvar
-    cy.get('app-vehicle-form').contains('button', /salvar|atualizar/i).click();
+    cy.get('app-vehicle-form')
+      .contains('button', /salvar|atualizar/i)
+      .click();
 
     // Aguarda apenas a chamada PATCH finalizar
     cy.wait('@updateVehiclePatch');
-    
+
     // Aguarda a tabela recarregar após o salvamento
     cy.wait('@reloadVehicles');
 
     // O modal deve fechar automaticamente
     cy.get('app-vehicle-form').should('not.be.visible');
   });
-
 });

@@ -99,6 +99,13 @@ export class Sales implements OnInit {
 
   ngOnInit(): void {
     this.load();
+
+    // Usa valueChanges para reagir a mudanças no desconto do form de edição.
+    // setValue({ emitEvent: false }) no netAmount dentro de calcEditNet()
+    // garante que não há loop: appliedDiscount → calcEditNet → netAmount (sem re-emit).
+    this.editForm.get('appliedDiscount')!.valueChanges.subscribe(() => {
+      this.calcEditNet();
+    });
   }
 
   get filteredItems(): SaleResponseDTO[] {
@@ -195,14 +202,8 @@ export class Sales implements OnInit {
   }
 
   openEdit(sale: SaleResponseDTO): void {
-    // Guarda a venda selecionada imediatamente — necessário para que
-    // calcEditNet() acesse grossAmount corretamente após o form ser populado.
     this.selectedSale = sale;
 
-    // Carrega customers/sellers e só então popula o form e abre o modal.
-    // Dessa forma o editForm.reset() acontece DENTRO do callback,
-    // garantindo que selectedSale já está definido quando os valores são
-    // gravados e quando o template renderiza os campos pela primeira vez.
     this.loadDependenciesForForm(false, () => {
       this.editForm.reset({
         paymentMethod: sale.paymentMethod ?? 'CASH',
@@ -320,7 +321,8 @@ export class Sales implements OnInit {
       c: this.cache.has('customers_all')
         ? of<PagedResponse<CustomerResponseDTO>>({
             _embedded: {
-              customerResponseDTOList: this.cache.get<CustomerResponseDTO[]>('customers_all') ?? [],
+              customerResponseDTOList:
+                this.cache.get<CustomerResponseDTO[]>('customers_all') ?? [],
             },
           })
         : this.custSvc.getAll(0, 200).pipe(catchError(() => of(null))),
@@ -369,15 +371,20 @@ export class Sales implements OnInit {
   }
 
   calcEditNet(): void {
-    // Usa o grossAmount da venda selecionada como base imutável para o cálculo.
-    // selectedSale é garantidamente não-nulo aqui pois openEdit() o define
-    // antes de chamar loadDependenciesForForm() e só abre o modal no callback.
     const gross = this.selectedSale?.grossAmount ?? 0;
-    const disc = Math.min(this.editForm.value.appliedDiscount ?? 0, gross);
-    if (disc !== this.editForm.value.appliedDiscount) {
-      this.editForm.patchValue({ appliedDiscount: disc }, { emitEvent: false });
+    const currentDisc = this.editForm.get('appliedDiscount')!.value ?? 0;
+    const disc = Math.min(currentDisc, gross);
+
+    // Corrige o desconto se exceder o bruto, sem re-disparar valueChanges
+    // (evita loop: appliedDiscount → calcEditNet → appliedDiscount → ...)
+    if (disc !== currentDisc) {
+      this.editForm.get('appliedDiscount')!.setValue(disc, { emitEvent: false });
     }
-    this.editForm.patchValue({ netAmount: gross - disc });
+
+    // setValue com emitEvent: false no netAmount evita que o patchValue
+    // cause um segundo ciclo de valueChanges no FormGroup, que estava
+    // resultando no campo de desconto sendo sobrescrito com o valor do bruto
+    this.editForm.get('netAmount')!.setValue(gross - disc, { emitEvent: false });
     this.cdr.markForCheck();
   }
 
@@ -411,7 +418,9 @@ export class Sales implements OnInit {
       !(this.form.value.installmentsNumber && this.form.value.installmentsNumber > 0)
     ) {
       this.form.get('installmentsNumber')?.markAsTouched();
-      this.toast.error('Informe o n\u00FAmero de parcelas para a forma de pagamento selecionada.');
+      this.toast.error(
+        'Informe o n\u00FAmero de parcelas para a forma de pagamento selecionada.',
+      );
       this.cdr.markForCheck();
       return;
     }
@@ -490,7 +499,7 @@ export class Sales implements OnInit {
       invoice: v.invoice || undefined,
     };
 
-    (this.svc as any).patch(this.selectedSale.id!, body).subscribe({
+    this.svc.update(this.selectedSale.id!, body).subscribe({
       next: () => {
         this.toast.success('Venda atualizada com sucesso!');
         this.editModalOpen = false;
@@ -500,7 +509,8 @@ export class Sales implements OnInit {
       },
       error: (e: any) => {
         const msg =
-          e?.error?.message || 'Não foi possível atualizar a venda. Tente novamente mais tarde.';
+          e?.error?.message ||
+          'Não foi possível atualizar a venda. Tente novamente mais tarde.';
         this.toast.error(msg);
         this.saving = false;
         this.cdr.markForCheck();
@@ -522,7 +532,7 @@ export class Sales implements OnInit {
       if (result.isConfirmed) {
         this.loading = true;
         this.cdr.markForCheck();
-        (this.svc as any).delete(sale.id!).subscribe({
+        this.svc.delete(sale.id!).subscribe({
           next: () => {
             this.toast.success('Venda cancelada com sucesso!');
             this.invalidateAllPages();

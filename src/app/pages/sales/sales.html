@@ -478,13 +478,15 @@
 
           <div>
             <label class="form-label" for="e-disc">Desconto Aplicado (R$)</label>
+            <!-- (input) removido: o cálculo agora é feito via valueChanges
+                 no ngOnInit, o que garante que o FormControl já tem o valor
+                 atualizado antes de calcEditNet() ser chamado -->
             <input
               id="e-disc"
               type="number"
               class="form-input"
               formControlName="appliedDiscount"
               step="0.01"
-              (input)="calcEditNet()"
             />
           </div>
 
