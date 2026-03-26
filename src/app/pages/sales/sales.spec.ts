@@ -22,6 +22,7 @@ describe('Sales (Enterprise Spec)', () => {
     getAll: vi.fn(),
     create: vi.fn(),
     patch: vi.fn(),
+    update: vi.fn().mockReturnValue(of({})),
     delete: vi.fn(),
   };
 
@@ -182,7 +183,7 @@ describe('Sales (Enterprise Spec)', () => {
 
   it('deve atualizar venda com sucesso', () => {
     component.selectedSale = { id: '1', grossAmount: 1000 } as any;
-    saleServiceMock.patch.mockReturnValue(of({}));
+    saleServiceMock.update.mockReturnValue(of({})); // ← atualizar mock
 
     component.editForm.patchValue({
       paymentMethod: 'CASH',
@@ -192,7 +193,7 @@ describe('Sales (Enterprise Spec)', () => {
 
     component.saveEdit();
 
-    expect(saleServiceMock.patch).toHaveBeenCalled();
+    expect(saleServiceMock.update).toHaveBeenCalled(); // ← testar update
     expect(toastMock.success).toHaveBeenCalled();
   });
 
