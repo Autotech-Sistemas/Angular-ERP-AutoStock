@@ -91,5 +91,30 @@ describe('Fluxo de Veículos (CRUD e Catálogo)', () => {
     // Aguarda a tabela recarregar
     cy.wait('@reloadVehicles');
   });
+  
+  // --- 7. EDIÇÃO ---
+  it('deve abrir o modal de edição e salvar as alterações', () => {
+    // Intercepta apenas o PATCH, que é o método real que sua API usa
+    cy.intercept('PATCH', `${apiUrl}/*`).as('updateVehiclePatch');
+    cy.intercept('GET', `${apiUrl}*`).as('reloadVehicles');
+
+    // Clica no botão "Editar" da primeira linha
+    cy.get('tbody tr').first().contains('Editar').click({ force: true });
+
+    // Verifica se o componente do formulário apareceu na tela
+    cy.get('app-vehicle-form').should('be.visible');
+
+    // Clica em Salvar
+    cy.get('app-vehicle-form').contains('button', /salvar|atualizar/i).click();
+
+    // Aguarda apenas a chamada PATCH finalizar
+    cy.wait('@updateVehiclePatch');
+    
+    // Aguarda a tabela recarregar após o salvamento
+    cy.wait('@reloadVehicles');
+
+    // O modal deve fechar automaticamente
+    cy.get('app-vehicle-form').should('not.be.visible');
+  });
 
 });

@@ -195,19 +195,27 @@ export class Sales implements OnInit {
   }
 
   openEdit(sale: SaleResponseDTO): void {
+    // Guarda a venda selecionada imediatamente — necessário para que
+    // calcEditNet() acesse grossAmount corretamente após o form ser populado.
     this.selectedSale = sale;
-    this.loadDependenciesForForm(false);
-    this.editForm.reset({
-      paymentMethod: sale.paymentMethod ?? 'CASH',
-      installmentsNumber: sale.installmentsNumber ?? null,
-      appliedDiscount: sale.appliedDiscount ?? 0,
-      netAmount: sale.netAmount ?? sale.grossAmount ?? 0,
-      customerId: sale.customer?.id ?? '',
-      invoice: sale.invoice ?? '',
+
+    // Carrega customers/sellers e só então popula o form e abre o modal.
+    // Dessa forma o editForm.reset() acontece DENTRO do callback,
+    // garantindo que selectedSale já está definido quando os valores são
+    // gravados e quando o template renderiza os campos pela primeira vez.
+    this.loadDependenciesForForm(false, () => {
+      this.editForm.reset({
+        paymentMethod: sale.paymentMethod ?? 'CASH',
+        installmentsNumber: sale.installmentsNumber ?? null,
+        appliedDiscount: sale.appliedDiscount ?? 0,
+        netAmount: sale.netAmount ?? sale.grossAmount ?? 0,
+        customerId: sale.customer?.id ?? '',
+        invoice: sale.invoice ?? '',
+      });
+      this.toggleEditInstallments();
+      this.editModalOpen = true;
+      this.cdr.markForCheck();
     });
-    this.toggleEditInstallments();
-    this.editModalOpen = true;
-    this.cdr.markForCheck();
   }
 
   openNew(): void {
@@ -258,7 +266,9 @@ export class Sales implements OnInit {
   }
 
   selectedInventoryLabel(id?: string | null): string {
-    return this.inventoryOptions.find((option) => option.id === id)?.label ?? 'Selecionar ve\u00EDculo';
+    return (
+      this.inventoryOptions.find((option) => option.id === id)?.label ?? 'Selecionar ve\u00EDculo'
+    );
   }
 
   selectCustomer(id: string): void {
@@ -305,10 +315,7 @@ export class Sales implements OnInit {
     }
   }
 
-  private loadDependenciesForForm(
-    includeInventory: boolean,
-    onLoaded?: () => void,
-  ): void {
+  private loadDependenciesForForm(includeInventory: boolean, onLoaded?: () => void): void {
     forkJoin({
       c: this.cache.has('customers_all')
         ? of<PagedResponse<CustomerResponseDTO>>({
@@ -362,12 +369,15 @@ export class Sales implements OnInit {
   }
 
   calcEditNet(): void {
+    // Usa o grossAmount da venda selecionada como base imutável para o cálculo.
+    // selectedSale é garantidamente não-nulo aqui pois openEdit() o define
+    // antes de chamar loadDependenciesForForm() e só abre o modal no callback.
     const gross = this.selectedSale?.grossAmount ?? 0;
     const disc = Math.min(this.editForm.value.appliedDiscount ?? 0, gross);
     if (disc !== this.editForm.value.appliedDiscount) {
       this.editForm.patchValue({ appliedDiscount: disc }, { emitEvent: false });
     }
-    this.editForm.patchValue({ netAmount: gross - disc }, { emitEvent: false });
+    this.editForm.patchValue({ netAmount: gross - disc });
     this.cdr.markForCheck();
   }
 
@@ -396,7 +406,10 @@ export class Sales implements OnInit {
       return;
     }
 
-    if (this.showInstallments && !(this.form.value.installmentsNumber && this.form.value.installmentsNumber > 0)) {
+    if (
+      this.showInstallments &&
+      !(this.form.value.installmentsNumber && this.form.value.installmentsNumber > 0)
+    ) {
       this.form.get('installmentsNumber')?.markAsTouched();
       this.toast.error('Informe o n\u00FAmero de parcelas para a forma de pagamento selecionada.');
       this.cdr.markForCheck();
@@ -440,13 +453,18 @@ export class Sales implements OnInit {
           errorMsg.includes('tb_sales_inventory_item_id_key') ||
           errorMsg.includes('duplicate key')
         ) {
-          this.toast.error('Este ve\u00EDculo j\u00E1 foi vendido! O estoque est\u00E1 desatualizado.');
+          this.toast.error(
+            'Este ve\u00EDculo j\u00E1 foi vendido! O estoque est\u00E1 desatualizado.',
+          );
         } else {
-          this.toast.error(e?.error?.message || 'Não foi possível registrar a venda. Verifique os dados e tente novamente.');
+          this.toast.error(
+            e?.error?.message ||
+              'Não foi possível registrar a venda. Verifique os dados e tente novamente.',
+          );
         }
         this.saving = false;
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
@@ -481,7 +499,8 @@ export class Sales implements OnInit {
         this.load(this.page, true);
       },
       error: (e: any) => {
-        const msg = e?.error?.message || 'Não foi possível atualizar a venda. Tente novamente mais tarde.';
+        const msg =
+          e?.error?.message || 'Não foi possível atualizar a venda. Tente novamente mais tarde.';
         this.toast.error(msg);
         this.saving = false;
         this.cdr.markForCheck();
@@ -511,7 +530,9 @@ export class Sales implements OnInit {
             this.load(0, true);
           },
           error: (e: any) => {
-            const msg = e?.error?.message || 'Não foi possível cancelar a venda. Ela pode ter dependências ativas no sistema.';
+            const msg =
+              e?.error?.message ||
+              'Não foi possível cancelar a venda. Ela pode ter dependências ativas no sistema.';
             this.toast.error(msg);
             this.loading = false;
             this.cdr.markForCheck();
@@ -522,7 +543,6 @@ export class Sales implements OnInit {
   }
 
   invalidateAllPages(): void {
-    // Limpa as primeiras páginas de cache de vendas para forçar atualização
     for (let i = 0; i < 20; i++) {
       this.cache.invalidate(this.cacheKey(i));
     }
