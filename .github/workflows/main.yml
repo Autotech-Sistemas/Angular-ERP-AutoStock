@@ -27,7 +27,7 @@ jobs:
         run: npm ci
 
       - name: Run Unit Tests
-        run: npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+        run: npm run test -- --watch=false --browsers=ChromeHeadless
 
       - name: Run E2E Tests
         run: npm run e2e -- --headless
